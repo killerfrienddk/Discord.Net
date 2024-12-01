@@ -1,6 +1,5 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
-using Discord.Net.Hanz.Tasks.Actors;
 using Discord.Net.Hanz.Utils.Bakery;
 using Microsoft.CodeAnalysis;
 
@@ -27,7 +26,7 @@ public abstract class Node : GenerationTask
         where TTask : GenerationTask
         => GetTask<TTask>(_context);
     
-    public readonly record struct StatefulGeneration<TState>(
+    public record StatefulGeneration<TState>(
         TState State,
         TypeSpec Spec
     )
@@ -375,33 +374,4 @@ public abstract class Node : GenerationTask
             .Replace("Gateway", string.Empty)
             .Replace("Rest", string.Empty);
     }
-}
-
-public interface INestedNode
-{
-    IncrementalValuesProvider<Node.StatefulGeneration<TState>> From<TState>(
-        IncrementalValuesProvider<Node.StatefulGeneration<TState>> provider
-    ) where TState : IHasActorInfo;
-}
-
-public interface INestedNode<TState>
-    where TState : IHasActorInfo
-{
-    IncrementalValuesProvider<Node.StatefulGeneration<TState>> From(
-        IncrementalValuesProvider<Node.StatefulGeneration<TState>> provider
-    );
-}
-
-public interface IBranchNode<TIn, TOut>
-{
-    IncrementalValuesProvider<Branch<TOut>> Branch(
-        IncrementalValuesProvider<Branch<TIn>> provider
-    );
-}
-
-public interface INestedTypeProducerNode<TParameters>
-{
-    IncrementalValuesProvider<Branch<TypeSpec>> Create<TSource>(
-        IncrementalValuesProvider<Branch<(TParameters Parameters, TSource Source)>> provider
-    );
 }

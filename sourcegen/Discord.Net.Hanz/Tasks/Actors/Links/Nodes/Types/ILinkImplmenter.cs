@@ -15,7 +15,7 @@ public interface ILinkImplmenter :
         LinkSpec Implementation
     );
 
-    public readonly record struct LinkSpec(
+    public sealed record LinkSpec(
         ImmutableEquatableArray<PropertySpec>? Properties = null,
         ImmutableEquatableArray<IndexerSpec>? Indexers = null,
         ImmutableEquatableArray<MethodSpec>? Methods = null

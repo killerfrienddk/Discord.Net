@@ -15,27 +15,27 @@ public class PagedNode : BaseLinkTypeNode
     {
         public string AsyncPagedType => $"IAsyncPaged<{PagedType}>";
 
-        public static State Create(LinkInfo linkInfo, CancellationToken token)
+        public static State Create(Context context, CancellationToken token)
         {
-            var pagesEntity = linkInfo.State.Entry.Type.Generics.Length == 1;
+            var pagesEntity = context.Entry.Type.Generics.Length == 1;
 
             var pagedType = pagesEntity
-                ? linkInfo.State.ActorInfo.Entity.DisplayString
-                : linkInfo.State.Entry.Type.Generics[0];
+                ? context.ActorInfo.Entity.DisplayString
+                : context.Entry.Type.Generics[0].Name;
 
             return new State(
                 pagesEntity,
-                linkInfo.ActorInfo,
+                context.ActorInfo,
                 pagedType,
-                $"Func<{linkInfo.ActorInfo}.{linkInfo.State.Entry.Type.ReferenceName}, TParams?, RequestOptions?, IAsyncPaged<{pagedType}>>",
-                linkInfo.State.Entry.Type.ReferenceName,
+                $"Func<{context.ActorInfo}.{context.Entry.Type.ReferenceName}, TParams?, RequestOptions?, IAsyncPaged<{pagedType}>>",
+                context.Entry.Type.ReferenceName,
                 new(
-                    linkInfo.Ancestors.Select(x =>
+                    context.Ancestors.Select(x =>
                         (
                             $"IAsyncPaged<{(pagesEntity ? x.ActorInfo.Entity.DisplayString : pagedType)}>",
                             x.HasAncestors
-                                ? $"{x.ActorInfo.Actor}.{linkInfo.State.Path.FormatRelative()}"
-                                : $"{x.ActorInfo.FormattedLinkType}.{linkInfo.State.Entry.Type.ReferenceName}"
+                                ? $"{x.ActorInfo.Actor}.{context.Path.FormatRelative()}"
+                                : $"{x.ActorInfo.FormattedLinkType}.{context.Entry.Type.ReferenceName}"
                         )
                     )
                 )
@@ -47,26 +47,16 @@ public class PagedNode : BaseLinkTypeNode
     {
     }
 
-    protected override bool ShouldContinue(LinkTypeNode.State linkState, CancellationToken token)
+    protected override IncrementalValuesProvider<(Context Context, ILinkImplmenter.LinkSpec Implementation)> Create(
+        IncrementalValuesProvider<Context> provider
+    ) => provider
+        .Select((context, token) => (Context: context, State: State.Create(context, token)))
+        .Select((pair, token) => (pair.Context, CreateInterfaceSpec(pair.Context, pair.State, token)));
+    
+    protected override bool ShouldImplement(LinkTypeNode.State linkState)
         => linkState is {IsTemplate: true, Entry.Type.Name: "Paged"};
 
-    protected override IncrementalValuesProvider<Branch<ILinkImplmenter.LinkImplementation>> CreateImplementation(
-        IncrementalValuesProvider<Branch<LinkInfo>> provider)
-    {
-        return provider
-            .Select(State.Create)
-            .Select(CreateImplmentation);
-    }
-
-    private ILinkImplmenter.LinkImplementation CreateImplmentation(State state, CancellationToken token)
-    {
-        return new ILinkImplmenter.LinkImplementation(
-            CreateInterfaceSpec(state, token),
-            CreateImplementationSpec(state, token)
-        );
-    }
-
-    private ILinkImplmenter.LinkSpec CreateInterfaceSpec(State state, CancellationToken token)
+    private ILinkImplmenter.LinkSpec CreateInterfaceSpec(Context context, State state, CancellationToken token)
     {
         return new ILinkImplmenter.LinkSpec(
             Methods: new([

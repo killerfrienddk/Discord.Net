@@ -58,6 +58,8 @@ public class SourceOfTruth : ISyntaxGenerationCombineTask<SourceOfTruth.Generati
 
     public bool IsValid(SyntaxNode node, CancellationToken token)
     {
+        return false;
+        
         return node switch
         {
             MemberDeclarationSyntax member => member.AttributeLists.Count > 0,

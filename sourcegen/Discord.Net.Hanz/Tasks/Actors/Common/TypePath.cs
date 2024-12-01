@@ -38,6 +38,8 @@ public readonly record struct TypePath(
     public Part? Last => Parts.Count == 0 ? null : Parts[Parts.Count - 1];
     public Part? First => Parts.Count == 0 ? null : Parts[0];
 
+    public Part this[int i] => Parts[i];
+
     #region Products
 
     /// <summary>
@@ -123,9 +125,26 @@ public readonly record struct TypePath(
 
         if (Count + 1 != path.Count) return false;
 
-        return SliceEquals(0, path.Take(path.Count - 1).Select(x => x.Type).ToArray());
+        return path.StartsWith(this);
     }
 
+    public bool StartsWith(TypePath path)
+    {
+        if (IsEmpty) return false;
+
+        if (path.IsEmpty) return false;
+
+        if (Count < path.Count) return false;
+
+        for(var i = 0; i < path.Count; i++)
+        {
+            if (this[i] != path[i])
+                return false;
+        }
+
+        return true;
+    }
+    
     public bool StartsWith(params Type[] semantic)
         => SliceEquals(0, semantic);
 
@@ -219,8 +238,7 @@ public readonly record struct TypePath(
     }
 
     #endregion
-
-
+    
     #region Formatting
 
     public override string ToString()
@@ -331,6 +349,27 @@ public readonly record struct TypePath(
         if (result.Count == 0) return Empty;
 
         return new(result.ToImmutableEquatableArray());
+    }
+    
+    public static TypePath operator ~(TypePath path)
+        => path.Slice(1);
+    
+    public static int operator <<(TypePath a, TypePath b)
+    {
+        var bounds = Math.Min(a.Count, b.Count);
+
+        if (bounds == 0) return 0;
+        
+        for (var i = 0; i < bounds; i++)
+        {
+            var left = a.Parts[a.Count - i - 1];
+            var right = b.Parts[b.Count - i - 1];
+
+            if (left != right)
+                return i;
+        }
+
+        return bounds;
     }
 
     #endregion

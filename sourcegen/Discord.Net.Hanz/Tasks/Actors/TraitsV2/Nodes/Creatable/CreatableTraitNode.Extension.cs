@@ -22,7 +22,7 @@ public sealed partial class CreatableTraitNode
     {
         context.RegisterSourceOutput(
             State
-                .Map((key, state) =>
+                .MapValues((key, state) =>
                     (
                         State: state,
                         BackLinks: state.Details
@@ -36,7 +36,7 @@ public sealed partial class CreatableTraitNode
                     )
                 )
                 .Where(x => x.BackLinks.Count > 0)
-                .Map(CreateExtensionSpec)
+                .MapValues(CreateExtensionSpec)
                 .ValuesProvider,
             (sourceContext, extension) => sourceContext.AddSource(
                 extension.Path,

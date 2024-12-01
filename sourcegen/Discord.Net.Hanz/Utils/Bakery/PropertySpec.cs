@@ -29,6 +29,23 @@ public readonly record struct PropertySpec(
     public bool HasSetter
         => Setter is not null || HasAutoSetter;
 
+    public static PropertySpec From(IPropertySymbol symbol)
+    {
+        return new(
+            symbol.Type.ToDisplayString(),
+            symbol.Name,
+            symbol.DeclaredAccessibility,
+            TypeUtils.GetModifiers(symbol).ToImmutableEquatableArray(),
+            null,
+            symbol.GetMethod is not null
+                ? symbol.GetMethod.DeclaredAccessibility
+                : Accessibility.NotApplicable,
+            symbol.SetMethod is not null
+                ? symbol.GetMethod.DeclaredAccessibility
+                : Accessibility.NotApplicable
+        );
+    }
+
     public override string ToString()
     {
         var builder = new StringBuilder();

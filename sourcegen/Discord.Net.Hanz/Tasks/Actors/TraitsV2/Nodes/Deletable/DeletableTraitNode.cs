@@ -64,7 +64,7 @@ public sealed class DeletableTraitNode : TraitNode
         context.RegisterSourceOutput(
             DeletableActors
                 .JoinByKey(PathingInfoProvider)
-                .Map(ActorNode.CreateActorContainer)
+                .MapValues(ActorNode.CreateActorContainer)
                 .Select(CreateImplementation)
         );
     }

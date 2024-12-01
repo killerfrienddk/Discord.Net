@@ -97,64 +97,63 @@ public class EnumerableNode : BaseLinkTypeNode
         }
     }
 
-    protected override bool ShouldContinue(LinkTypeNode.State linkState, CancellationToken token)
-        => linkState.Entry.Type.Name == "Enumerable";
+    protected override bool ShouldImplement(LinkTypeNode.State state)
+        => state.Entry.Type.Name == "Enumerable";
 
-    protected override IncrementalValuesProvider<Branch<ILinkImplmenter.LinkImplementation>> CreateImplementation(
-        IncrementalValuesProvider<Branch<LinkInfo>> provider
-    )
-    {
-        return provider
-            .KeyedBy(x => x.Value.ActorInfo)
-            .JoinByKey(
-                _extraParametersProvider,
-                (info, branch, extraParameters) => branch
-                    .Mutate(
-                        (
-                            Path: branch.Value.State.Path,
-                            ExtraParameters: extraParameters,
-                            Ancestors: branch.Value.Ancestors
-                        )
-                    )
-            )
-            .Select((info, branch) => branch
-                .Mutate(
-                    CreateImplementation(
-                        info,
-                        branch.Value.Path,
-                        branch.Value.ExtraParameters,
-                        branch.Value.Ancestors
-                    )
-                )
-            );
-    }
+    protected override IncrementalValuesProvider<(Context Context, ILinkImplmenter.LinkSpec Implementation)> Create(
+        IncrementalValuesProvider<Context> provider
+    ) => provider
+        .KeyedBy(x => x.ActorInfo)
+        .JoinByKey(
+            _extraParametersProvider,
+            (info, context, extraParameters) => (context, CreateInterfaceSpec(context, extraParameters))
+        )
+        .ValuesProvider;
 
-    private static string GetOverrideTarget(TypePath path, AncestorInfo ancestor)
+    // protected override IncrementalValuesProvider<Branch<ILinkImplmenter.LinkImplementation>> CreateImplementation(
+    //     IncrementalValuesProvider<Branch<LinkInfo>> provider
+    // )
+    // {
+    //     return provider
+    //         .KeyedBy(x => x.Value.ActorInfo)
+    //         .JoinByKey(
+    //             _extraParametersProvider,
+    //             (info, branch, extraParameters) => branch
+    //                 .Mutate(
+    //                     (
+    //                         Path: branch.Value.State.Path,
+    //                         ExtraParameters: extraParameters,
+    //                         Ancestors: branch.Value.Ancestors
+    //                     )
+    //                 )
+    //         )
+    //         .Select((info, branch) => branch
+    //             .Mutate(
+    //                 CreateImplementation(
+    //                     info,
+    //                     branch.Value.Path,
+    //                     branch.Value.ExtraParameters,
+    //                     branch.Value.Ancestors
+    //                 )
+    //             )
+    //         );
+    // }
+
+    private static string GetOverrideTarget(Context context, ActorsTask.ActorHierarchy ancestor)
         => ancestor.HasAncestors
-            ? $"{ancestor.ActorInfo.Actor}.{path.FormatRelative()}"
+            ? $"{ancestor.ActorInfo.Actor}.{context.Path.FormatRelative()}"
             : $"{ancestor.ActorInfo.FormattedLinkType}.Enumerable";
 
-    private ILinkImplmenter.LinkImplementation CreateImplementation(
-        ActorInfo info,
-        TypePath path,
-        ImmutableEquatableArray<ParameterSpec> parameters,
-        ImmutableEquatableArray<AncestorInfo> ancestors
-    ) => new(
-        CreateInterfaceSpec(info, path, parameters, ancestors),
-        CreateImplementationSpec(info, path, parameters, ancestors)
-    );
 
     private static ImmutableEquatableArray<ParameterSpec> DefaultParameters =
-        new ImmutableEquatableArray<ParameterSpec>([
+        new([
             ("RequestOptions?", "options", "null"),
             ("CancellationToken", "token", "default")
         ]);
 
     private ILinkImplmenter.LinkSpec CreateInterfaceSpec(
-        ActorInfo info,
-        TypePath path,
-        ImmutableEquatableArray<ParameterSpec> extraParameters,
-        ImmutableEquatableArray<AncestorInfo> ancestors)
+        Context context,
+        ImmutableEquatableArray<ParameterSpec> extraParameters)
     {
         var parameters = DefaultParameters;
 
@@ -172,21 +171,21 @@ public class EnumerableNode : BaseLinkTypeNode
             Methods: new ImmutableEquatableArray<MethodSpec>([
                 new MethodSpec(
                     Name: "AllAsync",
-                    ReturnType: $"ITask<IReadOnlyCollection<{info.Entity}>>",
+                    ReturnType: $"ITask<IReadOnlyCollection<{context.ActorInfo.Entity}>>",
                     Parameters: parametersWithExtra,
                     Modifiers: new(["new"])
                 ),
                 new MethodSpec(
                     Name: "AllAsync",
-                    ReturnType: $"ITask<IReadOnlyCollection<{info.Entity}>>",
+                    ReturnType: $"ITask<IReadOnlyCollection<{context.ActorInfo.Entity}>>",
                     Parameters: parameters,
-                    ExplicitInterfaceImplementation: $"{info.FormattedLinkType}.Enumerable",
+                    ExplicitInterfaceImplementation: $"{context.ActorInfo.FormattedLinkType}.Enumerable",
                     Expression: "AllAsync(options: options, token: token)"
                 )
             ])
         );
 
-        foreach (var ancestor in ancestors)
+        foreach (var ancestor in context.Ancestors)
         {
             if (!_extraParametersProvider.TryGetValue(ancestor.ActorInfo, out var ancestorExtraParameters))
                 ancestorExtraParameters = ImmutableEquatableArray<ParameterSpec>.Empty;
@@ -209,24 +208,14 @@ public class EnumerableNode : BaseLinkTypeNode
                         Name: "AllAsync",
                         ReturnType: $"ITask<IReadOnlyCollection<{ancestor.ActorInfo.Entity}>>",
                         Parameters: overrideParameters,
-                        ExplicitInterfaceImplementation: GetOverrideTarget(path, ancestor),
+                        ExplicitInterfaceImplementation: GetOverrideTarget(context, ancestor),
                         Expression:
                         $"AllAsync({string.Join(", ", overrideParameters.Select(x => $"{x.Name}: {x.Name}"))})"
                     )
                 )
             };
         }
-
-
+        
         return spec;
-    }
-
-    private ILinkImplmenter.LinkSpec CreateImplementationSpec(
-        ActorInfo info,
-        TypePath path,
-        ImmutableEquatableArray<ParameterSpec> extraParameters,
-        ImmutableEquatableArray<AncestorInfo> ancestors)
-    {
-        return ILinkImplmenter.LinkSpec.Empty;
     }
 }

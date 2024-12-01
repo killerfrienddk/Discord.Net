@@ -53,6 +53,8 @@ public class InterfaceProxy : ISyntaxGenerationCombineTask<InterfaceProxy.Genera
 
     public bool IsValid(SyntaxNode node, CancellationToken token)
     {
+        return false;
+        
         if (node is not ClassDeclarationSyntax classDeclarationSyntax)
             return false;
 

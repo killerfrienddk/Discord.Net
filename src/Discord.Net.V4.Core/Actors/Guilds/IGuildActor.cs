@@ -56,7 +56,7 @@ public partial interface IGuildActor :
 
     [return: TypeHeuristic(nameof(Roles))]
     IRoleActor Role(ulong id) => Roles[id];
-
+    
     IRoleActor.Enumerable.Indexable.BackLink<IGuildActor> Roles { get; }
 
     [return: TypeHeuristic(nameof(Stickers))]

@@ -7,6 +7,9 @@ public readonly record struct GenericSpec(
     VarianceKind Variance = VarianceKind.None
 )
 {
+    public static GenericSpec From(ITypeParameterSymbol symbol)
+        => new(symbol.Name, symbol.Variance);
+    
     public override string ToString()
         => $"{(Variance is not VarianceKind.None ? $"{Variance.ToString().ToLower()} " : string.Empty)}{Name}";
 

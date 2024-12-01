@@ -158,7 +158,7 @@ public readonly record struct TypeSpec(
         return new TypeSpec(
             Name: typeref.Name,
             Kind: typeref.TypeKind,
-            Generics: new(typeref.Generics.Select(x => new GenericSpec(x))),
+            Generics: typeref.Generics.ToImmutableEquatableArray(),
             GenericConstraints: new(typeref.GenericConstraints),
             Accessibility: typeref.Accessibility
         );

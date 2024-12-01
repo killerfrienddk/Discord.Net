@@ -17,7 +17,7 @@ public readonly record struct SourceSpec(
     {
         var builder = new StringBuilder();
 
-        foreach (var usingDirective in Usings)
+        foreach (var usingDirective in Usings.Distinct())
         {
             builder.Append("using ").Append(usingDirective).AppendLine(";");
         }

@@ -47,6 +47,6 @@ public abstract class TraitNode : Node
                 }
             )
             .Where((_, x) => x != null)
-            .Map((_, x) => x.Value);
+            .MapValues((_, x) => x.Value);
     }
 }

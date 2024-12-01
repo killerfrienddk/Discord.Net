@@ -1,3 +1,6 @@
+using System.Collections.Immutable;
+using Discord.Net.Hanz.Nodes.TypeNodes;
+using Discord.Net.Hanz.Tasks.Actors.Common;
 using Discord.Net.Hanz.Tasks.Actors.Links.Nodes.Types;
 using Discord.Net.Hanz.Tasks.Actors.Nodes;
 using Discord.Net.Hanz.Utils;
@@ -7,14 +10,20 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Discord.Net.Hanz.Tasks.Actors.Links.Nodes.Modifiers;
 
-public class ExtensionNode :
+public sealed class ExtensionNode :
     LinkNode,
-    INestedTypeProducerNode
+    ITypeProducerNode<ExtensionNode.Extension>.WithParameters<ActorInfo>.Introspects<AncestorPathingIntrospection>
 {
-    public readonly record struct Extension(
+    public record Extension(
+        ActorInfo ActorInfo,
+        string Name,
+        ImmutableEquatableArray<ExtensionSpec.Property> Properties
+    );
+
+    public record ExtensionSpec(
         string Actor,
         string Name,
-        ImmutableEquatableArray<Extension.Property> Properties
+        ImmutableEquatableArray<ExtensionSpec.Property> Properties
     )
     {
         public readonly record struct Property(
@@ -74,7 +83,7 @@ public class ExtensionNode :
             }
         }
 
-        public static IEnumerable<Extension> GetExtensions(
+        public static IEnumerable<ExtensionSpec> GetExtensions(
             ActorsTask.ActorSymbols target,
             CancellationToken cancellationToken)
         {
@@ -89,7 +98,7 @@ public class ExtensionNode :
 
             foreach (var extensionSymbol in types)
             {
-                yield return new Extension(
+                yield return new ExtensionSpec(
                     target.Actor.ToDisplayString(),
                     extensionSymbol.Name.Replace("Extension", string.Empty),
                     extensionSymbol
@@ -102,30 +111,15 @@ public class ExtensionNode :
         }
     }
 
-    public readonly record struct BuildContext(
-        ActorInfo ActorInfo,
-        TypePath Path,
-        ImmutableEquatableArray<Extension> Extensions
-    );
+    private readonly IncrementalGroupingProvider<ActorInfo, ExtensionSpec> _extensions;
 
-    public readonly record struct ExtensionContext(
-        Extension Extension,
-        ActorInfo ActorInfo,
-        TypePath Path
-    ) : IPathedState;
-
-    private readonly IncrementalGroupingProvider<ActorInfo, Extension> _extensions;
-
-    public ExtensionNode(
-        IncrementalGeneratorInitializationContext context,
-        Logger logger
-    ) : base(context, logger)
+    public ExtensionNode(IncrementalGeneratorInitializationContext context, Logger logger) : base(context, logger)
     {
         _extensions = context.SyntaxProvider
             .ForAttributeWithMetadataName(
                 "Discord.LinkExtensionAttribute",
                 (node, _) => node is InterfaceDeclarationSyntax,
-                Extension? (context, token) =>
+                ExtensionSpec? (context, token) =>
                 {
                     if (context.SemanticModel.GetDeclaredSymbol(context.TargetNode) is not INamedTypeSymbol
                         {
@@ -133,10 +127,13 @@ public class ExtensionNode :
                         } symbol)
                         return null;
 
-                    var ext = new Extension(
+                    var ext = new ExtensionSpec(
                         symbol.ContainingType.ToDisplayString(),
                         symbol.Name.Replace("Extension", string.Empty),
-                        symbol.GetMembers().OfType<IPropertySymbol>().Select(Extension.Property.Create)
+                        symbol
+                            .GetMembers()
+                            .OfType<IPropertySymbol>()
+                            .Select(ExtensionSpec.Property.Create)
                             .ToImmutableEquatableArray()
                     );
 
@@ -148,160 +145,48 @@ public class ExtensionNode :
             .TransformKeysVia(GetTask<ActorsTask>().ActorInfos);
     }
 
-    public IncrementalValuesProvider<Branch<TypeSpec>> Create<TSource>(
-        IncrementalValuesProvider<Branch<(NestedTypeProducerContext Parameters, TSource Source)>> provider)
-    {
-        var extensionProvider = provider
-            .KeyedBy(x => x.Value.Parameters.ActorInfo)
-            .JoinByKey(
-                _extensions,
-                (info, branch, extensions) => branch
-                    .Mutate(
-                        new BuildContext(
-                            branch.Value.Parameters.ActorInfo,
-                            branch.Value.Parameters.Path,
-                            extensions.ToImmutableEquatableArray()
-                        )
-                    )
-            )
-            .ValuesProvider
-            .SelectMany(BuildExtensions);
-
-        var nestedProvider = AddNestedTypes(
-            extensionProvider,
-            (context, token) => new NestedTypeProducerContext(context.ActorInfo, context.Path),
-            GetNode<BackLinkNode>()
-        );
-
-        return NestTypesViaPaths(nestedProvider)
-            .Select((x, _) => x.Spec);
-    }
-
-    private IEnumerable<StatefulGeneration<ExtensionContext>> BuildExtensions(
-        BuildContext context,
-        CancellationToken token)
-    {
-        using var logger = Logger
-            .GetSubLogger(context.ActorInfo.Assembly.ToString())
-            .GetSubLogger(nameof(BuildExtensions))
-            .GetSubLogger(context.ActorInfo.Actor.MetadataName)
-            .WithCleanLogFile();
-
-        logger.Log($"Building {context.Extensions.Count} extensions...");
-
-        foreach (var extension in context.Extensions)
-        foreach (var result in Build(extension, context.Extensions.Remove(extension), context.Path))
-        {
-            token.ThrowIfCancellationRequested();
-            yield return result;
-        }
-
-        yield break;
-
-        IEnumerable<StatefulGeneration<ExtensionContext>> Build(
-            Extension extension,
-            ImmutableEquatableArray<Extension> next,
-            TypePath path,
-            int depth = 0)
-        {
-            var extensionPath = path.Add<ExtensionNode>(extension.Name);
-
-            logger.Log($" - {extension.Name} -> {path}".Prefix(depth * 2));
-
-            yield return BuildExtension(context.ActorInfo, extensionPath, extension);
-
-            token.ThrowIfCancellationRequested();
-
-            if (next.Count == 0) yield break;
-
-            var nextExtensions = next.Remove(extension);
-
-            foreach (var child in nextExtensions)
-            foreach
-            (
-                var result
-                in Build(
-                    child,
-                    nextExtensions,
-                    extensionPath,
-                    depth + 1
+    public TypeSpec CreateSpec(AncestorPathingIntrospection introspection, Extension extension, TypePath path)
+        => new(
+            Name: extension.Name,
+            Kind: TypeKind.Interface,
+            Properties: extension.Properties
+                .SelectMany(x =>
+                    BuildExtensionProperty(path, x, extension)
                 )
-            )
-                yield return result;
-        }
-    }
-
-    private StatefulGeneration<ExtensionContext> BuildExtension(
-        ActorInfo actorInfo,
-        TypePath path,
-        Extension extension)
-    {
-        using var logger = Logger.GetSubLogger(actorInfo.Assembly.ToString())
-            .GetSubLogger(nameof(BuildExtension))
-            .GetSubLogger(actorInfo.Actor.MetadataName);
-
-        logger.Log($"Extension for {actorInfo.Actor.DisplayString}:");
-        logger.Log($" - {extension}");
-        logger.Log($" - {path}");
-
-        foreach (var property in extension.Properties)
-        {
-            logger.Log(
-                $"   - {property.Name}: {{ {property.PropertyKind}, {property.Type}, Has Actor: {property.ActorInfo.HasValue}, Is On Path: {property.IsDefinedOnPath(path)} }} ");
-        }
-
-        var bases = ImmutableEquatableArray<string>.Empty;
-
-        if (path.First.HasValue && !path.Equals(typeof(ActorNode), typeof(ExtensionNode)))
-        {
-            bases = bases.AddRange(
-                (path.First.Value + path.Slice(1).SemanticalProduct())
-                .Select(x => x.ToString())
-            );
-        }
-
-        return new StatefulGeneration<ExtensionContext>(
-            new(extension, actorInfo, path),
-            new TypeSpec(
-                Name: extension.Name,
-                Kind: TypeKind.Interface,
-                Properties: extension.Properties
-                    .SelectMany(x =>
-                        BuildExtensionProperty(path, x, extension)
-                    )
-                    .ToImmutableEquatableArray(),
-                Bases: bases
-            )
+                .ToImmutableEquatableArray(),
+            Bases: new([
+                ..introspection.SemanticBases,
+                ..introspection.AncestorBases.Select(x => $"{x.Actor}.{path.FormatRelative()}")
+            ])
         );
-    }
 
     public static IEnumerable<PropertySpec> BuildExtensionProperty(
         TypePath path,
-        Extension.Property property,
+        ExtensionSpec.Property property,
         Extension extension)
     {
         if (!property.IsDefinedOnPath(path))
             yield break;
 
-        if (property.PropertyKind is not Extension.Property.Kind.Normal && property.ActorInfo is null)
+        if (property.PropertyKind is not ExtensionSpec.Property.Kind.Normal && property.ActorInfo is null)
             yield break;
 
         var hasNewKeyword = property.PropertyKind switch
         {
-            Extension.Property.Kind.Normal => false,
-            Extension.Property.Kind.LinkMirror or Extension.Property.Kind.BackLinkMirror =>
+            ExtensionSpec.Property.Kind.Normal => false,
+            ExtensionSpec.Property.Kind.LinkMirror or ExtensionSpec.Property.Kind.BackLinkMirror =>
                 path.Contains<LinkTypeNode>(),
             _ => false
         };
 
         var propertyType = property.PropertyKind switch
         {
-            Extension.Property.Kind.Normal => property.Type,
-            Extension.Property.Kind.LinkMirror =>
+            ExtensionSpec.Property.Kind.Normal => property.Type,
+            ExtensionSpec.Property.Kind.LinkMirror =>
                 path.Equals(typeof(ActorNode), typeof(ExtensionNode))
                     ? property.ActorInfo!.Value.FormattedLink
                     : $"{property.ActorInfo!.Value.Actor}.{path.OfType<LinkTypeNode>().FormatRelative()}",
-            Extension.Property.Kind.BackLinkMirror =>
+            ExtensionSpec.Property.Kind.BackLinkMirror =>
                 path.Last?.Type == typeof(BackLinkNode)
                     ? $"{property.ActorInfo!.Value.Actor}.BackLink<TSource>"
                     : property.ActorInfo!.Value.Actor.DisplayString,
@@ -320,26 +205,75 @@ public class ExtensionNode :
 
         switch (property.PropertyKind)
         {
-            case Extension.Property.Kind.LinkMirror:
+            case ExtensionSpec.Property.Kind.LinkMirror:
                 foreach (var pathProduct in path.OfType<LinkTypeNode>().CartesianProduct())
                 {
                     yield return new PropertySpec(
                         Name: property.Name,
                         Type: $"{property.ActorInfo!.Value.Actor.DisplayString}.{pathProduct.FormatRelative()}",
-                        ExplicitInterfaceImplementation: $"{extension.Actor}.{pathProduct}.{extension.Name}",
+                        ExplicitInterfaceImplementation: $"{extension.ActorInfo.Actor}.{pathProduct}.{extension.Name}",
                         Expression: property.Name
                     );
                 }
 
                 break;
-            case Extension.Property.Kind.BackLinkMirror when path.Last?.Type == typeof(BackLinkNode):
+            case ExtensionSpec.Property.Kind.BackLinkMirror when path.Last?.Type == typeof(BackLinkNode):
                 yield return new PropertySpec(
                     Name: property.Name,
                     Type: property.ActorInfo!.Value.Actor.DisplayString,
-                    ExplicitInterfaceImplementation: $"{extension.Actor}.{extension.Name}",
+                    ExplicitInterfaceImplementation: $"{extension.ActorInfo.Actor}.{extension.Name}",
                     Expression: property.Name
                 );
                 break;
         }
     }
+
+    public IncrementalValuesProvider<NodeGeneration<Extension, TParent>> Create<TParent>(
+        IncrementalValuesProvider<NodeContext<TParent, ActorInfo>> provider,
+        ContinuationContext<Extension, TParent> continuationContext)
+    {
+        continuationContext.AddChild(
+            GetNode<BackLinkNode>(),
+            x => x.ActorInfo
+        );
+
+        return _extensions
+            .JoinByKey(
+                provider.KeyedBy(x => x.Parameters),
+                (actorInfo, extensions, context) => extensions
+                    .Select(ext =>
+                        MapExtension(
+                            actorInfo,
+                            context,
+                            context.Path,
+                            ext,
+                            extensions
+                        )
+                    )
+                    .ToImmutableEquatableArray()
+            )
+            .SelectMany((x, _) => x);
+
+        NodeGeneration<Extension, TParent> MapExtension(
+            ActorInfo info,
+            NodeContext<TParent, ActorInfo> context,
+            TypePath path,
+            ExtensionSpec spec,
+            ImmutableArray<ExtensionSpec> children)
+        {
+            var nextChildren = children.Remove(spec);
+
+            path = path.Add<ExtensionNode>(spec.Name);
+
+            return context.WithState(
+                new Extension(info, spec.Name, spec.Properties),
+                path,
+                nextChildren.Select(ext => MapExtension(info, context, path, ext, nextChildren))
+            );
+        }
+    }
+
+    public IncrementalValuesProvider<IntrospectionResult<AncestorPathingIntrospection, Extension>> Introspect(
+        IncrementalValuesProvider<IntrospectionContext<Extension>> provider
+    ) => Introspect(provider, x => x.ActorInfo);
 }

@@ -67,7 +67,7 @@ public sealed class IncrementalKeyValueProvider<TKey, TValue>
         lock (_lock)
             return _entries.TryGetValue(key, out value);
     }
-    
+
     public TValue GetValue(TKey key) => TryGetValue(key, out var value) ? value : throw new KeyNotFoundException();
 
     public TValue? GetValueOrDefault(TKey key)
@@ -89,6 +89,20 @@ public sealed class IncrementalKeyValueProvider<TKey, TValue>
             .SelectMany((pair, _) => pair.Left.Concat(pair.Right).Distinct())
             .Select(Keyed<TKey, TResult> (key, _) =>
                 (key, resultSelector(key, OptionallyGet(key), other.OptionallyGet(key)))
+            )
+            .AsIntrospected()
+    );
+    
+    public IncrementalKeyValueProvider<TKey, TResult> MergeByKey<TOther, TResult>(
+        IncrementalKeyValueProvider<TKey, TOther> other,
+        Func<TKey, Optional<TValue>, Optional<TOther>, Optional<TResult>> resultSelector
+    ) => new(
+        KeysProvider
+            .Collect()
+            .Combine(other.KeysProvider.Collect())
+            .SelectMany((pair, _) => pair.Left.Concat(pair.Right).Distinct())
+            .MaybeSelect(key =>
+                resultSelector(key, OptionallyGet(key), other.OptionallyGet(key)).Map(Keyed<TKey, TResult> (x) => (key, x))
             )
             .AsIntrospected()
     );
@@ -171,13 +185,30 @@ public sealed class IncrementalKeyValueProvider<TKey, TValue>
         );
     }
 
-    public IncrementalKeyValueProvider<TKey, TResult> Map<TResult>(
+    public IncrementalKeyValueProvider<TKey, TResult> MapValues<TResult>(
         Func<TKey, TValue, TResult> selector
     ) => new(
         EntriesProvider
             .Select(Keyed<TKey, TResult> (x, _) => (x.Key, selector(x.Key, x.Value)))
             .AsIntrospected()
     );
+
+    public IncrementalKeyValueProvider<TResult, TValue> MapKeys<TResult>(
+        Func<TKey, TValue, TResult> selector
+    ) => new(
+        EntriesProvider
+            .Select(Keyed<TResult, TValue> (x, _) => (selector(x.Key, x.Value), x.Value))
+            .AsIntrospected()
+    );
+
+    public IncrementalKeyValueProvider<TNewKey, TNewValue> Map<TNewKey, TNewValue>(
+        Func<TKey, TValue, (TNewKey, TNewValue)> selector
+    ) => new(
+        EntriesProvider
+            .Select(Keyed<TNewKey, TNewValue> (x, _) => selector(x.Key, x.Value))
+            .AsIntrospected()
+    );
+
 
     public IncrementalKeyValueProvider<TOther, TValue> TransformKeyVia<TOther>(
         IncrementalKeyValueProvider<TKey, TOther> other
@@ -200,20 +231,28 @@ public static class KeyedExtensions
     public static IncrementalKeyValueProvider<TKey, TSource> KeyedBy<TSource, TKey>(
         this IncrementalValuesProvider<TSource> source,
         Func<TSource, TKey> selector
-    ) => source.KeyedBy(x => (selector(x), x));
+    ) => source.ToKeyed(x => (selector(x), x));
 
     public static IncrementalKeyValueProvider<TKey, TValue> KeyedBy<TSource, TKey, TValue>(
         this IncrementalValuesProvider<TSource> source,
         Func<TSource, TKey> keySelector,
         Func<TSource, TValue> valueSelector
-    ) => source.KeyedBy(x => (keySelector(x), valueSelector(x)));
+    ) => source.ToKeyed(x => (keySelector(x), valueSelector(x)));
 
-    public static IncrementalKeyValueProvider<TKey, TValue> KeyedBy<TSource, TKey, TValue>(
+    public static IncrementalKeyValueProvider<TKey, TValue> ToKeyed<TSource, TKey, TValue>(
         this IncrementalValuesProvider<TSource> source,
         Func<TSource, (TKey, TValue)> selector
     ) => new(
         source
             .Select(Keyed<TKey, TValue> (x, _) => selector(x))
+            .AsIntrospected()
+    );
+
+    public static IncrementalKeyValueProvider<TKey, TValue> ToKeyed<TKey, TValue>(
+        this IncrementalValuesProvider<(TKey, TValue)> source
+    ) => new(
+        source
+            .Select(Keyed<TKey, TValue> (x, _) => x)
             .AsIntrospected()
     );
 

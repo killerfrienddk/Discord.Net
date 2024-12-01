@@ -1,9 +1,31 @@
+using System.Collections;
 using Microsoft.CodeAnalysis;
 
 namespace Discord.Net.Hanz.Utils;
 
 public static class TypeUtils
 {
+    public static IEnumerable<string> GetModifiers(ISymbol symbol)
+    {
+        if(symbol.IsStatic)
+            yield return "static";
+        
+        if(symbol.IsAbstract)
+            yield return "abstract";
+        
+        if(symbol.IsOverride)
+            yield return "override";
+        
+        if(symbol.IsSealed)
+            yield return "sealed";
+        
+        if(symbol.IsVirtual)
+            yield return "virtual";
+        
+        if(symbol.IsExtern)
+            yield return "extern";
+    }
+    
     public static IEnumerable<ITypeSymbol> SelfAndContaingTypes(ITypeSymbol symbol)
         => ContaingTypes(symbol).Prepend(symbol);
     

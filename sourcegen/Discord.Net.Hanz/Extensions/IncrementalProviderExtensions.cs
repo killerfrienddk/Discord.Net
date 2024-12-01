@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Reflection;
 using Discord.Net.Hanz.Utils.Bakery;
 using Microsoft.CodeAnalysis;
 
@@ -6,6 +7,19 @@ namespace Discord.Net.Hanz;
 
 public static class IncrementalProviderExtensions
 {
+    public static IncrementalValuesProvider<U> As<T, U>(this IncrementalValuesProvider<T> provider, U? v)
+        where T : U
+    {
+        return (IncrementalValuesProvider<U>)
+            typeof(IncrementalValuesProvider<>)
+            .MakeGenericType(typeof(U))
+            .GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic)
+            .Single()
+            .Invoke([
+                provider.GetType().GetField("Node", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(provider)
+            ]);
+    }
+
     public static IncrementalValuesProvider<V> ForEach<T, U, V>(
         this IncrementalValuesProvider<T> source,
         IEnumerable<U> enumerable,
@@ -108,7 +122,7 @@ public static class IncrementalProviderExtensions
         this IncrementalValuesProvider<T> source,
         IncrementalKeyValueProvider<U, V> other
     ) => source.Combine(other.EntriesProvider.Collect()).Select((pair, _) => pair.Left);
-    
+
     public static IncrementalValuesProvider<T> DependsOn<T, U, V>(
         this IncrementalValuesProvider<T> source,
         IncrementalGroupingProvider<U, V> other

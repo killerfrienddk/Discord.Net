@@ -11,7 +11,7 @@ using RelationshipGenerationDetails =
     (
     Node.StatefulGeneration<ActorNode.BuildState> State,
     ActorRelationships Relationships,
-    ImmutableEquatableArray<ActorInfo> Hierarchy
+    ImmutableEquatableArray<AncestorInfo> Hierarchy
     );
 
 public enum RelationshipKind
@@ -91,7 +91,7 @@ public sealed partial class ActorNode
                         .Or(
                             ancestors
                                 .Map(x => x
-                                    .Select(UserSpecifiedRelationshipNames.GetValueOrDefault)
+                                    .Select(x => UserSpecifiedRelationshipNames.GetValueOrDefault(x.ActorInfo))
                                     .FirstOrDefault(x => x is not null)
                                 )
                         )
@@ -209,15 +209,15 @@ public sealed partial class ActorNode
                         info.FormattedCanonicalRelationship
                     ])
                 )
-                .AddBases(details.Hierarchy.Select(x => $"{x.Actor}.CanonicalRelationship"));
+                .AddBases(details.Hierarchy.Select(x => $"{x.ActorInfo.Actor}.CanonicalRelationship"));
 
         foreach (var ancestor in details.Hierarchy)
         {
             type = type
                 .AddInterfacePropertyOverload(
-                    ancestor.Actor.DisplayString,
-                    $"{ancestor.Actor}.Relationship",
-                    GetRelationshipName(ancestor),
+                    ancestor.ActorInfo.Actor.DisplayString,
+                    $"{ancestor.ActorInfo.Actor}.Relationship",
+                    GetRelationshipName(ancestor.ActorInfo),
                     details.Relationships.RelationshipName
                 );
         }
@@ -226,7 +226,7 @@ public sealed partial class ActorNode
         foreach
         (
             var group
-            in details.Hierarchy.Select(x => (Info: x, RelationshipName: GetRelationshipName(x)))
+            in details.Hierarchy.Select(x => (Info: x.ActorInfo, RelationshipName: GetRelationshipName(x.ActorInfo)))
                 .Prepend((Info: info, RelationshipName: details.Relationships.RelationshipName))
                 .GroupBy(
                     x => x.Info.Entity,
@@ -245,7 +245,7 @@ public sealed partial class ActorNode
                 );
         }
 
-        if (details.Hierarchy.Any(x => GetRelationshipName(x) == details.Relationships.RelationshipName))
+        if (details.Hierarchy.Any(x => GetRelationshipName(x.ActorInfo) == details.Relationships.RelationshipName))
         {
             type = type
                 .AddProperties(
@@ -268,7 +268,7 @@ public sealed partial class ActorNode
             .AddBases(
                 details
                     .Hierarchy
-                    .Select(x => $"{x.Actor}.CanonicalRelationship")
+                    .Select(x => $"{x.ActorInfo.Actor}.CanonicalRelationship")
             );
     }
 

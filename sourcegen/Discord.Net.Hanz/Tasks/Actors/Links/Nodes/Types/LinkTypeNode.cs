@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Discord.Net.Hanz.Nodes.TypeNodes;
 using Discord.Net.Hanz.Tasks.Actors.Links.Nodes.Modifiers;
 using Discord.Net.Hanz.Tasks.Actors.Nodes;
 using Discord.Net.Hanz.Utils.Bakery;
@@ -8,9 +9,9 @@ namespace Discord.Net.Hanz.Tasks.Actors.Links.Nodes.Types;
 
 public class LinkTypeNode :
     LinkNode,
-    INestedTypeProducerNode
+    ITypeProducerNode<LinkTypeNode.State>.WithParameters<ActorInfo>
 {
-    public readonly record struct State(
+    public record State(
         ActorInfo ActorInfo,
         TypePath Path,
         LinkSchematics.Entry Entry
@@ -20,46 +21,133 @@ public class LinkTypeNode :
 
         public TypePath Path { get; } = Path.Add<LinkTypeNode>(Entry.Type.ReferenceName);
     }
-    
+
     public LinkTypeNode(IncrementalGeneratorInitializationContext context, Logger logger) : base(context, logger)
     {
     }
 
-    public IncrementalValuesProvider<Branch<TypeSpec>> Create<TSource>(
-        IncrementalValuesProvider<Branch<(NestedTypeProducerContext Parameters, TSource Source)>> provider)
+    public TypeSpec CreateSpec(State state, TypePath path)
     {
-        var stateProvider = provider
-            .Select((x, _) => x.Parameters)
-            .Combine(Schematics.Collect())
-            .SelectMany((tuple, token) =>
-                CreateState(
-                    tuple.Left.Value,
-                    tuple.Right,
-                    token
-                ).Select(x =>
-                    tuple.Left.Mutate(x)
-                )
+        var spec = TypeSpec
+            .From(state.Entry.Type)
+            .AddModifiers("new");
+
+        if (state.IsTemplate)
+        {
+            spec = spec.AddBases(
+                $"{state.ActorInfo.Actor}.Link"
             );
 
-        var implementationProvider = Branch(
-            stateProvider,
-            CreateLinkType,
-            GetNode<IndexableNode>(),
-            GetNode<EnumerableNode>(),
-            GetNode<DefinedNode>(),
-            GetNode<PagedNode>()
-        );
+            switch (state.ActorInfo.Assembly)
+            {
+                case ActorsTask.AssemblyTarget.Core:
+                    spec = spec.AddBases(
+                        $"{state.ActorInfo.FormattedLinkType}.{state.Path.FormatRelative()}"
+                    );
+                    break;
+                case ActorsTask.AssemblyTarget.Rest:
+                    spec = spec.AddBases(
+                        state.ActorInfo.FormattedRestLinkType
+                    );
+                    break;
+            }
+        }
+        else if (state.Path.First.HasValue)
+        {
+            spec = spec.AddBases([..state.Path.First.Value + state.Path.Slice(1).SemanticalProduct()]);
+        }
 
-        var nestedProvider = AddNestedTypes(
-            implementationProvider,
-            (state, _) => new NestedTypeProducerContext(state.ActorInfo, state.Path),
-            GetNode<BackLinkNode>(),
-            GetNode<HierarchyNode>(),
-            GetNode<ExtensionNode>()
-        );
-
-        return NestTypesViaPaths(nestedProvider).Select((x, _) => x.Spec);
+        return spec;
     }
+
+    public IncrementalValuesProvider<NodeGeneration<State, TParent>> Create<TParent>(
+        IncrementalValuesProvider<NodeContext<TParent, ActorInfo>> provider,
+        ContinuationContext<State, TParent> continuationContext)
+    {
+        continuationContext.AddChild(GetNode<HierarchyNode>(), x => x.ActorInfo);
+        continuationContext.AddChild(GetNode<BackLinkNode>(), x => x.ActorInfo);
+        continuationContext.AddChild(GetNode<ExtensionNode>(), x => x.ActorInfo);
+        
+        continuationContext.WithImplementationFrom(GetNode<IndexableNode>());
+        continuationContext.WithImplementationFrom(GetNode<EnumerableNode>());
+        continuationContext.WithImplementationFrom(GetNode<DefinedNode>());
+        continuationContext.WithImplementationFrom(GetNode<PagedNode>());
+
+        return provider
+            .Combine(Schematics.Collect())
+            .SelectMany((tuple, _) => CreateState(tuple.Left, tuple.Right));
+
+        static IEnumerable<NodeGeneration<State, TParent>> CreateState(
+            NodeContext<TParent, ActorInfo> context, 
+            ImmutableArray<LinkSchematics.Schematic> schematics)
+        {
+            foreach (var schematic in schematics)
+            foreach (var entry in schematic.Root.Children)
+            {
+                yield return CreateLinkState(context, entry, context.Path);
+            }
+        }
+
+        static NodeGeneration<State, TParent> CreateLinkState(
+            NodeContext<TParent, ActorInfo> context, 
+            LinkSchematics.Entry entry, 
+            TypePath path)
+        {
+            var state = new State(
+                context.Parameters,
+                path,
+                entry
+            );
+
+            return context.WithState(
+                state,
+                state.Path,
+                entry.Children.Select(child => CreateLinkState(context, child, state.Path))
+            );
+        }
+    }
+
+    // public IncrementalValuesProvider<Branch<TypeSpec>> Create<TSource>(
+    //     IncrementalValuesProvider<Branch<(NestedTypeProducerContext Parameters, TSource Source)>> provider)
+    // {
+    //     var stateProvider = provider
+    //         .Select((x, _) => x.Parameters)
+    //         .Combine(Schematics.Collect())
+    //         .SelectMany((tuple, token) =>
+    //             CreateState(
+    //                 tuple.Left.Value,
+    //                 tuple.Right,
+    //                 token
+    //             ).Select(x =>
+    //                 tuple.Left.Mutate(x)
+    //             )
+    //         );
+    //
+    //     var implementationProvider = Branch(
+    //             stateProvider,
+    //             CreateLinkType,
+    //             GetNode<IndexableNode>(),
+    //             GetNode<EnumerableNode>(),
+    //             GetNode<DefinedNode>(),
+    //             GetNode<PagedNode>()
+    //         )
+    //         .KeyedBy(x => x.Value.State.ActorInfo)
+    //         .JoinByKey(
+    //             GetTask<ActorsTask>().ActorAncestors,
+    //             AddHierarchy
+    //         )
+    //         .ValuesProvider;
+    //
+    //     var nestedProvider = AddNestedTypes(
+    //         implementationProvider,
+    //         (state, _) => new NestedTypeProducerContext(state.ActorInfo, state.Path),
+    //         GetNode<BackLinkNode>(),
+    //         GetNode<HierarchyNode>(),
+    //         GetNode<ExtensionNode>()
+    //     );
+    //
+    //     return NestTypesViaPaths(nestedProvider).Select((x, _) => x.Spec);
+    // }
 
     private StatefulGeneration<State> CreateLinkType(
         State state,
@@ -96,7 +184,7 @@ public class LinkTypeNode :
                     break;
             }
         }
-        else if(state.Path.First.HasValue)
+        else if (state.Path.First.HasValue)
         {
             spec = spec.AddBases([..state.Path.First.Value + state.Path.Slice(1).SemanticalProduct()]);
         }

@@ -6,6 +6,11 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Discord.Net.Hanz.Tasks.Actors;
 
+public record AncestorInfo(
+    ActorInfo ActorInfo,
+    bool IsEntityAssignable
+);
+
 public class ActorsTask : GenerationTask
 {
     public enum AssemblyTarget
@@ -77,21 +82,85 @@ public class ActorsTask : GenerationTask
         }
     }
 
-    public readonly record struct ActorHierarchy(
-        ImmutableEquatableArray<ActorInfo> Parents,
-        ImmutableEquatableArray<ActorInfo> Children
-    )
+    public sealed class ActorHierarchy : IEquatable<ActorHierarchy>
     {
-        public static readonly ActorHierarchy Empty = new(
-            ImmutableEquatableArray<ActorInfo>.Empty,
-            ImmutableEquatableArray<ActorInfo>.Empty
-        );
+        public ActorInfo ActorInfo { get; init; }
+        public ImmutableEquatableArray<AncestorInfo> ParentInfos { get; init; }
+        public ImmutableEquatableArray<ActorInfo> ChildrenInfos { get; init; }
+
+        public bool HasEntityAssignableAncestors => ParentInfos.Any(x => x.IsEntityAssignable);
+        
+        public IEnumerable<ActorHierarchy> Parents
+            => ParentInfos
+                .Select(x => _actorsTask.ActorHierarchies.GetValueOrDefault(x.ActorInfo))
+                .Where(x => x is not null);
+
+        public ImmutableEquatableArray<ActorInfo> EntityAssignableAncestors 
+            => _entityAssignableAncestors.Value;
+
+        public IEnumerable<ActorHierarchy> Children
+            => ChildrenInfos
+                .Select(_actorsTask.ActorHierarchies.GetValueOrDefault)
+                .Where(x => x is not null);
+
+        public bool HasAncestors => ParentInfos.Count > 0;
+        public bool HasChildren => ChildrenInfos.Count > 0;
+
+        private readonly ActorsTask _actorsTask;
+
+        private readonly Lazy<ImmutableEquatableArray<ActorInfo>> _entityAssignableAncestors;
+
+        public ActorHierarchy(
+            ActorsTask actorsTask,
+            ActorInfo actorInfo,
+            ImmutableEquatableArray<AncestorInfo> parentInfos,
+            ImmutableEquatableArray<ActorInfo> childrenInfos)
+        {
+            _actorsTask = actorsTask;
+            ActorInfo = actorInfo;
+            ParentInfos = parentInfos;
+            ChildrenInfos = childrenInfos;
+            _entityAssignableAncestors = new(() =>
+                parentInfos
+                    .Where(x => x.IsEntityAssignable)
+                    .Select(x => x.ActorInfo)
+                    .ToImmutableEquatableArray()
+            );
+        }
+
+        public bool Equals(ActorHierarchy? other)
+        {
+            if (other is null) return false;
+            if (ReferenceEquals(this, other)) return true;
+            return ActorInfo.Equals(other.ActorInfo) && ParentInfos.Equals(other.ParentInfos) &&
+                   ChildrenInfos.Equals(other.ChildrenInfos);
+        }
+
+        public override bool Equals(object? obj)
+        {
+            return ReferenceEquals(this, obj) || obj is ActorHierarchy other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return System.HashCode.Combine(ActorInfo, ParentInfos, ChildrenInfos);
+        }
+
+        public static bool operator ==(ActorHierarchy? left, ActorHierarchy? right)
+        {
+            return Equals(left, right);
+        }
+
+        public static bool operator !=(ActorHierarchy? left, ActorHierarchy? right)
+        {
+            return !Equals(left, right);
+        }
     }
 
     public IncrementalValuesProvider<ActorSymbols> Actors { get; }
     public IncrementalKeyValueProvider<string, ActorInfo> ActorInfos { get; }
 
-    public IncrementalKeyValueProvider<ActorInfo, ImmutableEquatableArray<ActorInfo>> ActorAncestors { get; }
+    public IncrementalKeyValueProvider<ActorInfo, ImmutableEquatableArray<AncestorInfo>> ActorAncestors { get; }
 
     public IncrementalKeyValueProvider<ActorInfo, ActorHierarchy> ActorHierarchies { get; }
 
@@ -110,28 +179,45 @@ public class ActorsTask : GenerationTask
             .KeyedBy(x => x.Actor.DisplayString);
 
         ActorAncestors = Actors
-            .KeyedBy(
-                x => x.Actor.ToDisplayString(),
-                x => TypeUtils
-                    .GetBaseTypes(x.Actor)
-                    .Concat(x.Actor.AllInterfaces)
-                    .Select(x => x.ToDisplayString())
-                    .ToImmutableEquatableArray()
-            )
-            .TransformKeyVia(ActorInfos)
-            .Map((info, ancestors) => ancestors
-                .Where(ActorInfos.ContainsKey)
-                .Select(ActorInfos.GetValue)
+            .Collect()
+            .SelectMany((actors, _) =>
+            {
+                return actors
+                    .Select(symbols => (
+                            Actor: symbols.Actor.ToDisplayString(),
+                            Ancestors: actors
+                                .Where(x => Hierarchy.Implements(symbols.Actor, x.Actor))
+                                .Select(x => (
+                                    Ancestor: x.Actor.ToDisplayString(),
+                                    IsEntityAssignable: Hierarchy.Implements(symbols.Entity, x.Entity) ||
+                                                        symbols.Entity.Equals(x.Entity, SymbolEqualityComparer.Default))
+                                )
+                                .ToImmutableEquatableArray()
+                        )
+                    );
+            })
+            .KeyedBy(x => x.Actor, x => x.Ancestors)
+            .PairKeys(ActorInfos)
+            .MapValues((info, ancestors) => ancestors
+                .Where(x => ActorInfos.ContainsKey(x.Ancestor))
+                .Select(x =>
+                    new AncestorInfo(
+                        ActorInfos.GetValue(x.Ancestor),
+                        x.IsEntityAssignable
+                    )
+                )
                 .ToImmutableEquatableArray()
             );
 
         ActorHierarchies = ActorAncestors
-            .Map((info, ancestors) =>
+            .MapValues((info, ancestors) =>
                 new ActorHierarchy(
-                    ancestors.ToImmutableEquatableArray(),
+                    this,
+                    info,
+                    ancestors,
                     ActorAncestors
                         .Entries
-                        .Where(x => x.Value.Contains(info))
+                        .Where(x => x.Value.Any(x => x.ActorInfo == info))
                         .Select(x => x.Key)
                         .ToImmutableEquatableArray()
                 )

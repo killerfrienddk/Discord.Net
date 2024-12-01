@@ -31,9 +31,9 @@ public sealed class TypeRef(ITypeSymbol type) : IEquatable<TypeRef>
 
     public bool CanBeNull => !IsValueType || SpecialType is SpecialType.System_Nullable_T;
 
-    public ImmutableArray<string> Generics { get; } = type is INamedTypeSymbol {TypeParameters.Length: > 0} genericType
-        ? genericType.TypeParameters.Select(x => x.Name).ToImmutableArray()
-        : ImmutableArray<string>.Empty;
+    public ImmutableArray<GenericSpec> Generics { get; } = type is INamedTypeSymbol {TypeParameters.Length: > 0} genericType
+        ? genericType.TypeParameters.Select(GenericSpec.From).ToImmutableArray()
+        : ImmutableArray<GenericSpec>.Empty;
     
     public ImmutableArray<GenericConstraintSpec> GenericConstraints { get; } 
         =  type is INamedTypeSymbol {TypeParameters.Length: > 0} genericType

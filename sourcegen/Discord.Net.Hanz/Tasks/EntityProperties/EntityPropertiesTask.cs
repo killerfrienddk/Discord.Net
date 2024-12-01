@@ -45,7 +45,7 @@ public sealed class EntityPropertiesTask : GenerationTask
             .KeyedBy(x => x.Type.DisplayString);
 
         PropertiesWithInherited = Properties
-            .Map((key, value) =>
+            .MapValues((key, value) =>
                 new EntityPropertiesWithInheritance(
                     value,
                     value.Inherited

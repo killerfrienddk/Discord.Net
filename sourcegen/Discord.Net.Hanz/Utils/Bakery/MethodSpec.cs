@@ -29,6 +29,41 @@ public readonly record struct MethodSpec(
     public ImmutableEquatableArray<GenericConstraintSpec> GenericConstraints { get; init; }
         = GenericConstraints ?? ImmutableEquatableArray<GenericConstraintSpec>.Empty;
 
+    public static MethodSpec From(IMethodSymbol symbol)
+    {
+        return new MethodSpec(
+            symbol.Name,
+            symbol.ReturnType.ToDisplayString(),
+            symbol.DeclaredAccessibility,
+            new(TypeUtils.GetModifiers(symbol)),
+            symbol.Parameters.Select(ParameterSpec.From).ToImmutableEquatableArray(),
+            symbol.TypeParameters.Select(GenericSpec.From).ToImmutableEquatableArray(),
+            symbol.TypeParameters.Select(GenericConstraintSpec.From).ToImmutableEquatableArray(),
+            symbol.ExplicitInterfaceImplementations.Length > 0
+                ? symbol.ExplicitInterfaceImplementations[0].ContainingType.ToDisplayString()
+                : null
+        );
+    }
+
+    public string ToInvocationString()
+    {
+        var builder = new StringBuilder();
+
+        builder.Append(Name);
+
+        if (Generics.Count > 0)
+        {
+            builder.Append('<').Append(string.Join(", ", Generics.Select(x => x.Name))).Append('>');
+        }
+
+        builder.Append('(');
+        
+        if(Parameters.Count > 0)
+            builder.Append(string.Join(", ", Parameters.Select(x => x.Name)));
+
+        return builder.Append(')').ToString();
+    }
+    
     public override string ToString()
     {
         var builder = new StringBuilder();

@@ -12,7 +12,7 @@ public sealed partial class CreatableTraitNode
     {
         context.RegisterSourceOutput(
             State
-                .Map(ActorNode.CreateActorContainer)
+                .MapValues(ActorNode.CreateActorContainer)
                 .Select(CreateImplementation),
             (sourceContext, spec) => sourceContext.AddSource(
                 spec.Path,
