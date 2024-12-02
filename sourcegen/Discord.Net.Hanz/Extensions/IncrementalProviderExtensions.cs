@@ -46,14 +46,14 @@ public static class IncrementalProviderExtensions
         }
     }
 
-    public static IncrementalValuesProvider<T> WhereNonNull<T>(
+    public static IncrementalValuesProvider<T> WhereNotNull<T>(
         this IncrementalValuesProvider<T?> source
     ) where T : class
     {
         return source.Where(x => x is not null)!;
     }
 
-    public static IncrementalValuesProvider<T> WhereNonNull<T>(
+    public static IncrementalValuesProvider<T> WhereNotNull<T>(
         this IncrementalValuesProvider<T?> source
     ) where T : struct
     {

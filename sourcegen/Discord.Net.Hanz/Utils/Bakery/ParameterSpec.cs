@@ -12,12 +12,12 @@ public readonly record struct ParameterSpec(
     public static ParameterSpec From(IParameterSymbol symbol)
     {
         return new ParameterSpec(
-            symbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+            symbol.Type.ToDisplayString(),
             symbol.Name,
             symbol.HasExplicitDefaultValue
                 ? SyntaxUtils.FormatLiteral(
                     symbol.ExplicitDefaultValue,
-                    symbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
+                    symbol.Type.ToDisplayString()
                 )
                 : null
         );

@@ -3,8 +3,8 @@ using Discord.Models;
 namespace Discord;
 
 public partial interface IInvitableTrait<out TInviteActor, out TInvite> : IInvitableTrait
-    where TInvite : class, IInvite
     where TInviteActor : class, IInviteActor, IActor<string, TInvite>
+    where TInvite : class, IInvite
 {
     [SourceOfTruth]
     [return: TypeHeuristic(nameof(Invites))]

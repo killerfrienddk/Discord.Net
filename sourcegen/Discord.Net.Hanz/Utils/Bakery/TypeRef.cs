@@ -14,7 +14,7 @@ public sealed class TypeRef(ITypeSymbol type) : IEquatable<TypeRef>
         SymbolDisplayMiscellaneousOptions.EscapeKeywordIdentifiers |
         SymbolDisplayMiscellaneousOptions.UseSpecialTypes
     );
-    
+
     public string Name { get; } = type.Name;
     public string? Namespace { get; } = type.ContainingNamespace?.ToString();
 
@@ -22,7 +22,7 @@ public sealed class TypeRef(ITypeSymbol type) : IEquatable<TypeRef>
     public string MetadataName { get; } = type.ToFullMetadataName();
     public string ReferenceName { get; } = type.ToDisplayString(DeclarationFormat);
     //public string FullyQualifiedName { get; } = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-    
+
     public Accessibility Accessibility { get; } = type.DeclaredAccessibility;
 
     public bool IsValueType { get; } = type.IsValueType;
@@ -31,13 +31,20 @@ public sealed class TypeRef(ITypeSymbol type) : IEquatable<TypeRef>
 
     public bool CanBeNull => !IsValueType || SpecialType is SpecialType.System_Nullable_T;
 
-    public ImmutableArray<GenericSpec> Generics { get; } = type is INamedTypeSymbol {TypeParameters.Length: > 0} genericType
-        ? genericType.TypeParameters.Select(GenericSpec.From).ToImmutableArray()
-        : ImmutableArray<GenericSpec>.Empty;
-    
-    public ImmutableArray<GenericConstraintSpec> GenericConstraints { get; } 
-        =  type is INamedTypeSymbol {TypeParameters.Length: > 0} genericType
-            ? genericType.TypeParameters.Select(GenericConstraintSpec.From).Where(x => x != default).ToImmutableArray()
+    public ImmutableArray<GenericSpec> Generics { get; }
+        = type is INamedTypeSymbol {TypeParameters.Length: > 0} genericType
+            ? genericType.TypeParameters
+                .OrderBy(x => x.Ordinal)
+                .Select(GenericSpec.From)
+                .ToImmutableArray()
+            : ImmutableArray<GenericSpec>.Empty;
+
+    public ImmutableArray<GenericConstraintSpec> GenericConstraints { get; }
+        = type is INamedTypeSymbol {TypeParameters.Length: > 0} genericType
+            ? genericType.TypeParameters
+                .OrderBy(x => x.Ordinal)
+                .Select(GenericConstraintSpec.From)
+                .ToImmutableArray()
             : ImmutableArray<GenericConstraintSpec>.Empty;
 
     public override string ToString() => DisplayString;

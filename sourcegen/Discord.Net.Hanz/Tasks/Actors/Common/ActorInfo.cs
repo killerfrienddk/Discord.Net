@@ -15,7 +15,8 @@ public readonly record struct ActorInfo(
     TypeRef Id,
     TypeRef Model,
     TypeRef CoreActor,
-    TypeRef CoreEntity
+    TypeRef CoreEntity,
+    bool IsTrait
 )
 {
     public bool IsCore => Assembly is ActorsTask.AssemblyTarget.Core;
@@ -79,16 +80,19 @@ public readonly record struct ActorInfo(
     
     public static ActorInfo Create(ActorsTask.ActorSymbols target)
     {
-        var coreActor = target.Assembly is ActorsTask.AssemblyTarget.Core
-            ? new TypeRef(target.Actor)
-            : new TypeRef(
-                Hierarchy.GetHierarchy(target.Actor, false)
-                    .First(x =>
-                        x.Type.ContainingAssembly.Name == "Discord.Net.V4.Core"
-                        &&
-                        x.Type.AllInterfaces.Any(y => y is {Name: "IActor", TypeArguments.Length: 2})
-                    ).Type
-            );
+        var coreActorSymbol = target.Assembly is ActorsTask.AssemblyTarget.Core
+            ? target.Actor
+            : Hierarchy.GetHierarchy(target.Actor, false)
+                .First(x =>
+                    x.Type.ContainingAssembly.Name == "Discord.Net.V4.Core"
+                    &&
+                    x.Type.AllInterfaces.Any(y => y is {Name: "IActor", TypeArguments.Length: 2})
+                )
+                .Type;
+
+        var isTrait = coreActorSymbol.GetAttributes().Any(x => x.AttributeClass?.Name == "TraitAttribute");
+        
+        var coreActor = new TypeRef(coreActorSymbol);
 
         var coreEntity = target.Assembly is ActorsTask.AssemblyTarget.Core
             ? new TypeRef(target.Actor)
@@ -108,7 +112,8 @@ public readonly record struct ActorInfo(
             Id: new(target.Id),
             Model: new(target.Model),
             CoreEntity: coreEntity,
-            CoreActor: coreActor
+            CoreActor: coreActor,
+            IsTrait: isTrait
         );
     }
 }

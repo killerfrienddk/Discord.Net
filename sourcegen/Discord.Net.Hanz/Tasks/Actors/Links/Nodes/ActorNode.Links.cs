@@ -21,18 +21,6 @@ public sealed partial class ActorNode
 
     private void CreateLinks(IncrementalGeneratorInitializationContext context)
     {
-        // var buildProvider = AddNestedTypes(
-        //         ContainersProvider,
-        //         (state, _) => new(state.ActorInfo, state.Path),
-        //         GetNode<HierarchyNode>(),
-        //         GetNode<BackLinkNode>(),
-        //         GetNode<ExtensionNode>(),
-        //         GetNode<LinkTypeNode>()
-        //     )
-        //     .Collect()
-        //     .SelectMany(Introspect)
-        //     .Select(CreateLinkInterface);
-
         var typeRoot = new NestedTypeRoot<ActorInfo>(
             GetTask<ActorsTask>()
                 .ActorInfos

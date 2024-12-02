@@ -34,7 +34,7 @@ public class LinkSchematics : GenerationTask
                 IsPotentialSchematic,
                 MapSchematic
             )
-            .WhereNonNull();
+            .WhereNotNull();
 
         NonCoreSchematics = context
             .CompilationProvider

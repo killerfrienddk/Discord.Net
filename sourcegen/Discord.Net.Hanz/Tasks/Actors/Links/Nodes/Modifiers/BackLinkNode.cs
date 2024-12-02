@@ -57,6 +57,9 @@ public sealed class BackLinkNode :
                 ])
             );
 
+        if (path.Equals(typeof(ActorNode), typeof(BackLinkNode)))
+            spec = spec.AddBases(state.ActorInfo.Actor.DisplayString);
+
         switch (state)
         {
             case ExtensionBackLink extensionBackLink:
@@ -72,12 +75,14 @@ public sealed class BackLinkNode :
                 break;
             case HierarchyBackLink hierarchyBackLink:
                 spec = spec.AddProperties(
-                    hierarchyBackLink.Hierarchy.HierarchyInfos.Select(info =>
-                        HierarchyNode.FormatExtensionProperty(
-                            info,
-                            path
-                        )
-                    )
+                    hierarchyBackLink.Hierarchy.HierarchyInfos.SelectMany(IEnumerable<PropertySpec> (info) => [
+                        HierarchyNode.FormatExtensionProperty(state.ActorInfo, info, path),
+                        HierarchyNode.FormatExtensionProperty(state.ActorInfo, info, path.ParentPath.Value) with
+                        {
+                            ExplicitInterfaceImplementation = path.ParentPath.Value,
+                            Expression = HierarchyNode.GetHierarchyPropertyName(state.ActorInfo, info)
+                        },
+                    ])
                 );
                 break;
         }

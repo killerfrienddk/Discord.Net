@@ -9,7 +9,7 @@ public partial interface IApplicationRoleConnectionMetadataActor :
     [BackLink<IApplicationActor>]
     private static async Task<IReadOnlyCollection<IApplicationRoleConnectionMetadata>> UpdateAsync(
         IApplicationActor application,
-        ApplicationRoleConnectionMetadataLink link,
+        Link link,
         IEnumerable<ModifyApplicationRoleConnectionMetadataProperties> metadatas,
         RequestOptions? options = null,
         CancellationToken token = default)

@@ -43,7 +43,7 @@ public sealed class SourceOfTruth : GenerationTask
                     (node, _) => node is MemberDeclarationSyntax,
                     Map
                 )
-                .WhereNonNull()
+                .WhereNotNull()
                 .GroupBy(x => x.ContainingType)
                 .Select(CreateSourceSpec)
         );

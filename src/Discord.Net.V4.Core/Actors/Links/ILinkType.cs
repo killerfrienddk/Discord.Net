@@ -15,8 +15,8 @@ public interface ISpecifiedLinkType<out TActor, TId, out TEntity, in TModel> :
 public partial interface ILinkType<out TActor, TId, out TEntity, in TModel> : 
     ILink<TActor, TId, TEntity, TModel>
     where TActor : class, IActor<TId, TEntity>
-    where TEntity : class, IEntity<TId, TModel>
     where TId : IEquatable<TId>
+    where TEntity : class, IEntity<TId, TModel>
     where TModel : class, IModel
 {
     [LinkSchematic]

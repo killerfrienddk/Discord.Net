@@ -53,7 +53,7 @@ public sealed partial class CreatableTraitNode : TraitNode
                 (node, _) => node is InterfaceDeclarationSyntax,
                 Map
             )
-            .WhereNonNull();
+            .WhereNotNull();
 
         CreatableWithParametersProvider = context.SyntaxProvider
             .ForAttributeWithMetadataName(
@@ -61,7 +61,7 @@ public sealed partial class CreatableTraitNode : TraitNode
                 (node, _) => node is InterfaceDeclarationSyntax,
                 Map
             )
-            .WhereNonNull();
+            .WhereNotNull();
 
         State = CreatableProvider
             .Collect()

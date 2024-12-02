@@ -19,7 +19,7 @@ public partial interface IReactionActor :
     {
         return target.Client.RestApiClient.ExecuteAsync(
             Routes.CreateReaction(
-                target.Source.Channel.Id,
+                target.Source.Message.Channel.Id,
                 target.Source.Message.Id,
                 target.Source.Id
             ),
@@ -48,9 +48,9 @@ public partial interface IReactionActor :
         CancellationToken token = default)
     {
         return target.Client.RestApiClient.ExecuteAsync(
-            target is ICurrentUserActor
-                ? Routes.DeleteOwnReaction(target.Source.Channel.Id, target.Source.Message.Id, target.Source.Id)
-                : Routes.DeleteUserReaction(target.Source.Channel.Id, target.Source.Message.Id, target.Source.Id, target.Id),
+            target is ICurrentUserActor.Link
+                ? Routes.DeleteOwnReaction(target.Source.Message.Channel.Id, target.Source.Message.Id, target.Source.Id)
+                : Routes.DeleteUserReaction(target.Source.Message.Channel.Id, target.Source.Message.Id, target.Source.Id, target.Id),
             options ?? target.Client.DefaultRequestOptions,
             token
         );

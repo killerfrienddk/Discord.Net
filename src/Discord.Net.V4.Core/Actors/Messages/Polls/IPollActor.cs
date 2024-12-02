@@ -12,7 +12,7 @@ public partial interface IPollActor :
     {
         var model = await Client.RestApiClient.ExecuteRequiredAsync(
             Routes.EndPoll(
-                Channel.Id,
+                Message.Channel.Id,
                 Message.Id
             ),
             options,

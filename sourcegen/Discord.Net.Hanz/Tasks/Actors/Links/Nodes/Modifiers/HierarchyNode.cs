@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Text;
 using Discord.Net.Hanz.Nodes.TypeNodes;
 using Discord.Net.Hanz.Tasks.Actors.Common;
 using Discord.Net.Hanz.Tasks.Actors.Nodes;
@@ -29,7 +30,7 @@ public sealed class HierarchyNode :
                     .ForAttributeWithMetadataName(
                         "Discord.LinkHierarchicalRootAttribute",
                         (node, _) => node is InterfaceDeclarationSyntax,
-                        (string Actor, ImmutableEquatableArray<string> UserSpecifiedTypes)? (sourceContext, _) =>
+                        (string Actor, ImmutableEquatableArray<string>? UserSpecifiedTypes)? (sourceContext, _) =>
                         {
                             if (sourceContext.SemanticModel.GetDeclaredSymbol(sourceContext.TargetNode) is not
                                 INamedTypeSymbol
@@ -46,7 +47,7 @@ public sealed class HierarchyNode :
                                 .Value;
 
                             if (value.Kind is TypedConstantKind.Error)
-                                return null;
+                                return (symbol.ToDisplayString(), null);
 
                             return (
                                 symbol.ToDisplayString(),
@@ -56,29 +57,60 @@ public sealed class HierarchyNode :
                             );
                         }
                     )
-                    .WhereNonNull()
+                    .WhereNotNull()
                     .KeyedBy(x => x.Actor, x => x.UserSpecifiedTypes)
                     .TransformKeyVia(GetTask<ActorsTask>().ActorInfos),
                 (info, hierarchy, userSpecifiedTypes) =>
-                    userSpecifiedTypes.Count > 0
-                        ? userSpecifiedTypes
-                            .Select(x => GetTask<ActorsTask>().ActorInfos.GetValueOrDefault(x))
-                            .Where(x => x != default)
-                            .ToImmutableEquatableArray()
-                        : hierarchy.ChildrenInfos.ToImmutableEquatableArray()
+                    (
+                        userSpecifiedTypes?.Count > 0
+                            ? userSpecifiedTypes
+                                .Select(x => GetTask<ActorsTask>().ActorInfos.GetValueOrDefault(x))
+                                .Where(x => x != default)
+                            : hierarchy.ChildrenInfos
+                    )
+                    .Where(x => !x.IsTrait)
+                    .ToImmutableEquatableArray()
             );
+    }
+
+    public static string GetHierarchyPropertyName(ActorInfo from, ActorInfo property)
+    {
+        return string.Join(
+            string.Empty,
+            ToNameParts(GetFriendlyName(property.Actor))
+                .Except(
+                    ToNameParts(GetFriendlyName(from.Actor))
+                )
+        );
+    }
+
+    public static string[] ToNameParts(string str)
+    {
+        var sb = new StringBuilder();
+
+        for (var i = 0; i < str.Length; i++)
+        {
+            var ch = str[i];
+            if (char.IsUpper(ch) && i > 0)
+                sb.Append(' ');
+
+            sb.Append(ch);
+        }
+
+        return sb.ToString().Split(' ');
     }
 
     public static PropertySpec FormatExtensionProperty(
         ActorInfo info,
+        ActorInfo property,
         TypePath path
     )
     {
         return new PropertySpec(
-            Type: path.Count == 1
-                ? info.FormattedLink
-                : $"{info.Actor}.{path.FormatRelative()}",
-            Name: GetFriendlyName(info.Actor)
+            Type: path.Equals(typeof(ActorNode), typeof(HierarchyNode))
+                ? property.FormattedLink
+                : $"{property.Actor}.{path.ParentPath.Value.FormatRelative()}",
+            Name: GetHierarchyPropertyName(info, property)
         );
     }
 
@@ -86,22 +118,29 @@ public sealed class HierarchyNode :
     {
         var isTemplate = path.Count == 1;
 
-        return new TypeSpec(
-            Name: "Hierarchy",
-            Kind: TypeKind.Interface,
-            Properties: state
-                .HierarchyInfos
-                .Select(x => new PropertySpec(
-                    Type: isTemplate
-                        ? x.FormattedLink
-                        : $"{x.Actor}.{path.FormatRelative()}",
-                    Name: GetFriendlyName(x.Actor)
-                ))
-                .ToImmutableEquatableArray(),
-            Bases: new([
-                ..introspection.SemanticBases
-            ])
-        );
+        var spec = new TypeSpec(
+                Name: "Hierarchy",
+                Kind: TypeKind.Interface,
+                Bases: new([
+                    ..introspection.SemanticBases
+                ])
+            )
+            .AddProperties(state.HierarchyInfos.Select(x => FormatExtensionProperty(state.ActorInfo, x, path)));
+
+        foreach (var semanticPath in introspection.SemanticBases.Where(x => x.Last == "Hierarchy"))
+        {
+            spec = spec.AddProperties(
+                state.HierarchyInfos.Select(x =>
+                    FormatExtensionProperty(state.ActorInfo, x, semanticPath) with
+                    {
+                        ExplicitInterfaceImplementation = semanticPath,
+                        Expression = GetHierarchyPropertyName(state.ActorInfo, x)
+                    }
+                )
+            );
+        }
+
+        return spec;
     }
 
     public IncrementalValuesProvider<NodeGeneration<Hierarchy, TParent>> Create<TParent>(

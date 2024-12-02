@@ -78,7 +78,7 @@ public sealed partial class ActorNode
                     return (symbol.ToDisplayString(), name);
                 }
             )
-            .WhereNonNull()
+            .WhereNotNull()
             .KeyedBy(x => x.Actor, x => x.Name)
             .PairKeys(GetTask<ActorsTask>().ActorInfos);
 
@@ -87,34 +87,42 @@ public sealed partial class ActorNode
             .MergeByKey(
                 UserSpecifiedRelationshipNames,
                 (info, ancestors, name) =>
-                    name
-                        .Or(
-                            ancestors
-                                .Map(x => x
-                                    .Select(x => UserSpecifiedRelationshipNames.GetValueOrDefault(x.ActorInfo))
-                                    .FirstOrDefault(x => x is not null)
-                                )
-                        )
-                        .Or(GetFriendlyName(info.Actor))
+                {
+                    if (name.HasValue)
+                        return name.Value;
+
+                    if (ancestors.HasValue &&
+                        ancestors.Value.Any(x => UserSpecifiedRelationshipNames.ContainsKey(x.ActorInfo)))
+                    {
+                        return UserSpecifiedRelationshipNames.GetValue(
+                            ancestors.Value
+                                .First(x => UserSpecifiedRelationshipNames.ContainsKey(x.ActorInfo))
+                                .ActorInfo
+                        );
+                    }
+
+                    return GetFriendlyName(info.Actor);
+                }
             );
 
         Relationships = GetTask<ActorsTask>(context)
             .Actors
             .GroupManyBy(
-                x => ActorInfo.Create(x),
+                x => x.Actor.ToDisplayString(),
                 x => x
                     .GetCoreActor()
                     .Interfaces
-                    .Where(x => x.Name.EndsWith("Relationship"))
+                    .Where(x => x.ToDisplayString().EndsWith("Relationship"))
                     .Select(x =>
                     {
-                        var split = x.Name.Split('.');
+                        var split = x.ToDisplayString().Split('.');
                         return (
                             Ident: string.Join(".", split.Take(split.Length - 1)),
                             Relationship: split[split.Length - 1]
                         );
                     })
             )
+            .TransformKeysVia(GetTask<ActorsTask>().ActorInfos)
             .MaybeMapValues(
                 (info, target) =>
                 {
@@ -200,25 +208,85 @@ public sealed partial class ActorNode
         RelationshipGenerationDetails details
     )
     {
-        var type =
-            new TypeSpec(
-                    "CanonicalRelationship",
-                    TypeKind.Interface,
-                    Bases: new([
-                        "Relationship",
-                        info.FormattedCanonicalRelationship
-                    ])
-                )
-                .AddBases(details.Hierarchy.Select(x => $"{x.ActorInfo.Actor}.CanonicalRelationship"));
+        var (_, relationship, hierarchy) = details;
 
-        foreach (var ancestor in details.Hierarchy)
+        var type = new TypeSpec(
+                "CanonicalRelationship",
+                TypeKind.Interface,
+                Bases: new([
+                    "Relationship",
+                    info.FormattedCanonicalRelationship
+                ])
+            )
+            .AddBases(hierarchy.Select(x => $"{x.ActorInfo.Actor}.CanonicalRelationship"));
+
+        if (relationship.Relationships.Count > 0)
+        {
+            using var logger = Logger.GetSubLogger("Relationships").GetSubLogger(info.Actor.MetadataName);
+
+            logger.Log($"Relationships for {relationship.ActorInfo.Actor}:");
+
+            foreach (var actorRelationship in relationship.Relationships)
+            {
+                logger.Log($" -> {actorRelationship.Kind}: {actorRelationship.To.Actor}");
+            }
+
+            var queue = new Queue<(ActorInfo ActorInfo, ImmutableArray<string> Path)>(
+                relationship.Relationships.Select(x => (x.To, ImmutableArray<string>.Empty))
+            );
+
+            var visited = new HashSet<ActorInfo>();
+            var canonicalResult = new HashSet<(ActorInfo ActorInfo, ImmutableArray<string> Path)>();
+
+            while (queue.Count > 0)
+            {
+                var (target, path) = queue.Dequeue();
+
+                if (!visited.Add(target))
+                    continue;
+
+                if (!Relationships.TryGetValue(target, out var targetRelationships))
+                    continue;
+
+                path = path.Add(targetRelationships.RelationshipName);
+
+                if (!canonicalResult.Add((target, path)))
+                    continue;
+
+                foreach (var targetRelationship in targetRelationships.Relationships)
+                {
+                    queue.Enqueue((targetRelationship.To, path));
+                }
+            }
+
+            logger.Log($"Result: {canonicalResult.Count} entries:");
+            foreach (var result in canonicalResult)
+            {
+                logger.Log($" -> {result.ActorInfo.Actor} : {string.Join(".", result.Path)}");
+            }
+
+            type = type
+                .AddProperties(
+                    canonicalResult
+                        .Select(x => new PropertySpec(
+                            x.ActorInfo.Actor.DisplayString,
+                            x.Path.Last(),
+                            Expression: string.Join(".", x.Path.Insert(0, relationship.RelationshipName)),
+                            Modifiers: new([
+                                "new"
+                            ])
+                        ))
+                );
+        }
+
+        foreach (var ancestor in hierarchy)
         {
             type = type
                 .AddInterfacePropertyOverload(
                     ancestor.ActorInfo.Actor.DisplayString,
                     $"{ancestor.ActorInfo.Actor}.Relationship",
                     GetRelationshipName(ancestor.ActorInfo),
-                    details.Relationships.RelationshipName
+                    relationship.RelationshipName
                 );
         }
 
@@ -226,8 +294,8 @@ public sealed partial class ActorNode
         foreach
         (
             var group
-            in details.Hierarchy.Select(x => (Info: x.ActorInfo, RelationshipName: GetRelationshipName(x.ActorInfo)))
-                .Prepend((Info: info, RelationshipName: details.Relationships.RelationshipName))
+            in hierarchy.Select(x => (Info: x.ActorInfo, RelationshipName: GetRelationshipName(x.ActorInfo)))
+                .Prepend((Info: info, RelationshipName: relationship.RelationshipName))
                 .GroupBy(
                     x => x.Info.Entity,
                     (key, x) => (Entity: key, Nodes: x.ToArray())
@@ -245,13 +313,13 @@ public sealed partial class ActorNode
                 );
         }
 
-        if (details.Hierarchy.Any(x => GetRelationshipName(x.ActorInfo) == details.Relationships.RelationshipName))
+        if (hierarchy.Any(x => GetRelationshipName(x.ActorInfo) == relationship.RelationshipName))
         {
             type = type
                 .AddProperties(
                     new PropertySpec(
                         info.Actor.DisplayString,
-                        details.Relationships.RelationshipName,
+                        relationship.RelationshipName,
                         Accessibility.Internal,
                         new(["new"])
                     )
@@ -259,15 +327,14 @@ public sealed partial class ActorNode
                 .AddInterfacePropertyOverload(
                     info.Actor.DisplayString,
                     $"{info.Actor}.Relationship",
-                    details.Relationships.RelationshipName,
-                    details.Relationships.RelationshipName
+                    relationship.RelationshipName,
+                    relationship.RelationshipName
                 );
         }
 
         return type
             .AddBases(
-                details
-                    .Hierarchy
+                hierarchy
                     .Select(x => $"{x.ActorInfo.Actor}.CanonicalRelationship")
             );
     }
@@ -291,8 +358,7 @@ public sealed partial class ActorNode
                 )
                 .AddProperties(new PropertySpec(
                     info.Actor.DisplayString,
-                    details.Relationships.RelationshipName,
-                    Accessibility.Internal
+                    details.Relationships.RelationshipName
                 ));
     }
 

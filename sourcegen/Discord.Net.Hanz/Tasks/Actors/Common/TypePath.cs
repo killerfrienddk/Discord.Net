@@ -17,10 +17,13 @@ public readonly record struct TypePath(
     public readonly record struct Part(
         Type Type,
         string Name
-    )
+    ) : IEquatable<string>
     {
         public override string ToString() => Name;
 
+        public bool Equals(string other)
+            => Name == other;
+        
         public static implicit operator Part((Type, string) tuple) => new(tuple.Item1, tuple.Item2);
 
         public static IEnumerable<TypePath> operator +(Part a, IEnumerable<TypePath> paths)
@@ -28,6 +31,11 @@ public readonly record struct TypePath(
         
         public static IEnumerable<TypePath> operator +(IEnumerable<TypePath> paths, Part part)
             => paths.Select(x => x + part);
+
+        public static bool operator ==(Part part, string name) => part.Equals(name);
+        public static bool operator ==(Part? part, string name) => part.HasValue && part.Value.Equals(name);
+        public static bool operator !=(Part part, string name) => !part.Equals(name);
+        public static bool operator !=(Part? part, string name) => part.HasValue && !part.Value.Equals(name);
     }
 
     public static readonly TypePath Empty = new([]);
@@ -38,6 +46,8 @@ public readonly record struct TypePath(
     public Part? Last => Parts.Count == 0 ? null : Parts[Parts.Count - 1];
     public Part? First => Parts.Count == 0 ? null : Parts[0];
 
+    public TypePath? ParentPath => Parts.Count == 0 ? null : Slice(0, Parts.Count - 1);
+    
     public Part this[int i] => Parts[i];
 
     #region Products

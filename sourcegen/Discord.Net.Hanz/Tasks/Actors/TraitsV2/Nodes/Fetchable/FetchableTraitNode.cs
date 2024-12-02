@@ -49,7 +49,7 @@ public sealed partial class FetchableTraitNode : TraitNode
                 (node, _) => node is InterfaceDeclarationSyntax,
                 MapTarget
             )
-            .WhereNonNull()
+            .WhereNotNull()
             .Collect()
             .Combine(
                 context
@@ -59,7 +59,7 @@ public sealed partial class FetchableTraitNode : TraitNode
                         (node, _) => node is InterfaceDeclarationSyntax,
                         MapTarget
                     )
-                    .WhereNonNull()
+                    .WhereNotNull()
                     .Collect()
             )
             .Combine(
@@ -70,7 +70,7 @@ public sealed partial class FetchableTraitNode : TraitNode
                         (node, _) => node is InterfaceDeclarationSyntax,
                         MapTarget
                     )
-                    .WhereNonNull()
+                    .WhereNotNull()
                     .Collect()
             )
             .Combine(
@@ -81,7 +81,7 @@ public sealed partial class FetchableTraitNode : TraitNode
                         (node, _) => node is InterfaceDeclarationSyntax,
                         MapTarget
                     )
-                    .WhereNonNull()
+                    .WhereNotNull()
                     .Collect()
             )
             .SelectMany(IEnumerable<PartialFetchableTarget> (x, _) =>

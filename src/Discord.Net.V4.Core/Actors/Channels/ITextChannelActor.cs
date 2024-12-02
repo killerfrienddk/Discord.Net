@@ -12,8 +12,7 @@ namespace Discord;
         nameof(Routes.CreateGuildChannel),
         nameof(IGuildActor),
         RouteGenerics = [typeof(GuildTextChannel)]
-    ),
-    SuppressMessage("ReSharper", "PossibleInterfaceMemberAmbiguity"), BackLink(nameof(Messages))
+    )
 ]
 public partial interface ITextChannelActor :
     IMessageChannelTrait,

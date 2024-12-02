@@ -140,7 +140,7 @@ public sealed class ExtensionNode :
                     return ext;
                 }
             )
-            .WhereNonNull()
+            .WhereNotNull()
             .GroupBy(x => x.Actor)
             .TransformKeysVia(GetTask<ActorsTask>().ActorInfos);
     }

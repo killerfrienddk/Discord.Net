@@ -29,8 +29,6 @@ public readonly record struct GenericConstraintSpec(
 
         constraints.AddRange(parameter.ConstraintTypes.Select(x => x.ToDisplayString()));
 
-        if (constraints.Count == 0) return default;
-
         return new(parameter.Name, new(constraints));
     }
     

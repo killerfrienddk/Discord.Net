@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using Discord.Net.Hanz.Nodes.TypeNodes;
+using Discord.Net.Hanz.Tasks.Actors.Common;
 using Discord.Net.Hanz.Tasks.Actors.Links.Nodes.Modifiers;
 using Discord.Net.Hanz.Tasks.Actors.Nodes;
 using Discord.Net.Hanz.Utils.Bakery;
@@ -9,7 +10,7 @@ namespace Discord.Net.Hanz.Tasks.Actors.Links.Nodes.Types;
 
 public class LinkTypeNode :
     LinkNode,
-    ITypeProducerNode<LinkTypeNode.State>.WithParameters<ActorInfo>
+    ITypeProducerNode<LinkTypeNode.State>.WithParameters<ActorInfo>.Introspects<AncestorPathingIntrospection>
 {
     public record State(
         ActorInfo ActorInfo,
@@ -26,11 +27,15 @@ public class LinkTypeNode :
     {
     }
 
-    public TypeSpec CreateSpec(State state, TypePath path)
+    public TypeSpec CreateSpec(AncestorPathingIntrospection introspection, State state, TypePath path)
     {
         var spec = TypeSpec
             .From(state.Entry.Type)
-            .AddModifiers("new");
+            .AddModifiers("new")
+            .AddBases([
+                ..introspection.SemanticBases,
+                ..introspection.AncestorBases.Select(x => $"{x.Actor}.{path.FormatRelative()}")
+            ]);
 
         if (state.IsTemplate)
         {
@@ -52,10 +57,6 @@ public class LinkTypeNode :
                     break;
             }
         }
-        else if (state.Path.First.HasValue)
-        {
-            spec = spec.AddBases([..state.Path.First.Value + state.Path.Slice(1).SemanticalProduct()]);
-        }
 
         return spec;
     }
@@ -67,7 +68,7 @@ public class LinkTypeNode :
         continuationContext.AddChild(GetNode<HierarchyNode>(), x => x.ActorInfo);
         continuationContext.AddChild(GetNode<BackLinkNode>(), x => x.ActorInfo);
         continuationContext.AddChild(GetNode<ExtensionNode>(), x => x.ActorInfo);
-        
+
         continuationContext.WithImplementationFrom(GetNode<IndexableNode>());
         continuationContext.WithImplementationFrom(GetNode<EnumerableNode>());
         continuationContext.WithImplementationFrom(GetNode<DefinedNode>());
@@ -78,7 +79,7 @@ public class LinkTypeNode :
             .SelectMany((tuple, _) => CreateState(tuple.Left, tuple.Right));
 
         static IEnumerable<NodeGeneration<State, TParent>> CreateState(
-            NodeContext<TParent, ActorInfo> context, 
+            NodeContext<TParent, ActorInfo> context,
             ImmutableArray<LinkSchematics.Schematic> schematics)
         {
             foreach (var schematic in schematics)
@@ -89,8 +90,8 @@ public class LinkTypeNode :
         }
 
         static NodeGeneration<State, TParent> CreateLinkState(
-            NodeContext<TParent, ActorInfo> context, 
-            LinkSchematics.Entry entry, 
+            NodeContext<TParent, ActorInfo> context,
+            LinkSchematics.Entry entry,
             TypePath path)
         {
             var state = new State(
@@ -225,4 +226,8 @@ public class LinkTypeNode :
                 yield return childState;
         }
     }
+
+    public IncrementalValuesProvider<IntrospectionResult<AncestorPathingIntrospection, State>> Introspect(
+        IncrementalValuesProvider<IntrospectionContext<State>> provider
+    ) => Introspect(provider, x => x.ActorInfo);
 }

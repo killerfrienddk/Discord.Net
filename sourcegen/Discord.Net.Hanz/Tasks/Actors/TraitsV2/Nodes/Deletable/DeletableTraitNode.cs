@@ -35,7 +35,7 @@ public sealed class DeletableTraitNode : TraitNode
                     );
                 }
             )
-            .WhereNonNull()
+            .WhereNotNull()
             .DependsOn(GetTask<ApiRouteTask>().Routes)
             .DependsOn(GetTask<ActorsTask>().ActorInfos)
             .MaybeSelect(x =>

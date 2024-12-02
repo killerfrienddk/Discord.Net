@@ -121,7 +121,7 @@ public readonly record struct MethodSpec(
         {
             builder
                 .AppendLine()
-                .Append(string.Join(Environment.NewLine, GenericConstraints).Prefix(4));
+                .Append(string.Join(Environment.NewLine, GenericConstraints).Prefix(4).WithNewlinePadding(4));
         }
 
         if (Expression is not null)

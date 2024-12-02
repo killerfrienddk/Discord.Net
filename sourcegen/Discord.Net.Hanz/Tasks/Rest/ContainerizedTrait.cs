@@ -105,7 +105,7 @@ public sealed class ContainerizedTrait : ISyntaxGenerationTask<ContainerizedTrai
               }
               """;
 
-        foreach (var container in TypeUtils.ContaingTypes(target.Symbol))
+        foreach (var container in TypeUtils.ContainingTypes(target.Symbol))
         {
             result = $$"""
                        public partial interface {{container.Name}}

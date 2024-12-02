@@ -172,7 +172,7 @@ public class ActorsTask : GenerationTask
                 IsPossibleActorNode,
                 GetPossibleActorSymbols
             )
-            .WhereNonNull();
+            .WhereNotNull();
 
         ActorInfos = Actors
             .Select((x, _) => ActorInfo.Create(x))

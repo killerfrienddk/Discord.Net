@@ -26,10 +26,10 @@ public static class TypeUtils
             yield return "extern";
     }
     
-    public static IEnumerable<ITypeSymbol> SelfAndContaingTypes(ITypeSymbol symbol)
-        => ContaingTypes(symbol).Prepend(symbol);
+    public static IEnumerable<ITypeSymbol> SelfAndContainingTypes(ITypeSymbol symbol)
+        => ContainingTypes(symbol).Prepend(symbol);
     
-    public static IEnumerable<ITypeSymbol> ContaingTypes(ITypeSymbol symbol)
+    public static IEnumerable<ITypeSymbol> ContainingTypes(ITypeSymbol symbol)
     {
         var current = symbol.ContainingType;
 

@@ -41,7 +41,7 @@ public sealed class EntityPropertiesTask : GenerationTask
                 IsValid,
                 Map
             )
-            .WhereNonNull()
+            .WhereNotNull()
             .KeyedBy(x => x.Type.DisplayString);
 
         PropertiesWithInherited = Properties

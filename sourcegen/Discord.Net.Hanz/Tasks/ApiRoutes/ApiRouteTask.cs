@@ -22,7 +22,7 @@ public class ApiRouteTask : GenerationTask
                 IsMatch,
                 Transform
             )
-            .WhereNonNull()
+            .WhereNotNull()
             .KeyedBy(x => x.Name);
     }
 

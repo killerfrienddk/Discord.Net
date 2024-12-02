@@ -86,7 +86,7 @@ public sealed class InterfaceProxy : GenerationTask
                     (node, _) => node is PropertyDeclarationSyntax,
                     Map
                 )
-                .WhereNonNull()
+                .WhereNotNull()
                 .GroupBy(x => x.ContainingType)
                 .Select(CreateSourceSpec)
         );
