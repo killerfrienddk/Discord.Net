@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <Import Project="../../Discord.Net.targets" />
   <PropertyGroup>
-    <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>12.0</LangVersion>
     <Nullable>enable</Nullable>
@@ -11,13 +11,10 @@
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>CA2252</NoWarn>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
-
-  <PropertyGroup>
-    <HanzLogLevel>debug</HanzLogLevel>
-    <HanzLogFilePath>C:\Users\lynch\Documents\GitHub\Discord.Net\HanzLogs.txt</HanzLogFilePath>
-  </PropertyGroup>
-
+  
   <ItemGroup>
     <PackageReference Include="MorseCode.ITask" Version="2.0.3" />
     <PackageReference Include="System.Collections.Immutable" Version="8.0.0" />
@@ -27,6 +24,10 @@
   <ItemGroup>
     <ProjectReference Include="..\..\sourcegen\Discord.Net.Hanz\Discord.Net.Hanz.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
     <ProjectReference Include="..\Discord.Net.Models\Discord.Net.Models.csproj"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
   </ItemGroup>
 
 </Project>

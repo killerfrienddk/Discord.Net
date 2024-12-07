@@ -123,15 +123,15 @@ public sealed partial class CreatableTraitNode : TraitNode
                 x => new CreatableTraitState(
                     x.Actor,
                     x.Details
-                        .Select(x =>
+                        .Select(tuple =>
                             new TraitDetails(
-                                x.Route,
-                                x.Detail.MethodName ?? "CreateAsync",
-                                x.Properties,
-                                x.Detail.RouteGenerics,
-                                x.FromBackLinks,
-                                x.Detail.IdPath,
-                                x.Detail.Kind
+                                tuple.Route!.Routes.OrderBy(x => x.GenericParameters.Count - tuple.Detail.RouteGenerics.Count).First(),
+                                tuple.Detail.MethodName ?? "CreateAsync",
+                                tuple.Properties,
+                                tuple.Detail.RouteGenerics,
+                                tuple.FromBackLinks,
+                                tuple.Detail.IdPath,
+                                tuple.Detail.Kind
                             )
                         )
                         .ToImmutableEquatableArray()

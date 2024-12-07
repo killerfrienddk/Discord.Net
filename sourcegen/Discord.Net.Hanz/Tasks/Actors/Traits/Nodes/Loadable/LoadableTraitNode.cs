@@ -58,7 +58,7 @@ public sealed class LoadableTraitNode : TraitNode
 
                 return new State(
                     details.Hierarchy,
-                    route,
+                    route.Routes.OrderBy(x => x.GenericParameters.Count - details.Context.RouteGenerics.Count).First(),
                     details.Context.RouteGenerics,
                     details.HasSimpleFetchable
                 ).Some();

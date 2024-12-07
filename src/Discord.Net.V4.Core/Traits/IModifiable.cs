@@ -5,7 +5,10 @@ namespace Discord;
 
 #pragma warning disable CS9113 // Parameter is unread.
 [AttributeUsage(AttributeTargets.Interface)]
-internal sealed class ModifiableAttribute<TParams>(string route) : Attribute;
+internal sealed class ModifiableAttribute<TParams>(string route) : Attribute
+{
+    public int Generics { get; set; }
+}
 #pragma warning restore CS9113 // Parameter is unread.
 
 public interface IModifiable<TId, in TParams, TApi, TModel> :

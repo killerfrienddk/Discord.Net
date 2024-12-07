@@ -1,6 +1,8 @@
 using Discord.Models.Json;
 using Discord.Utils;
 using System.Net;
+using System.Runtime.InteropServices;
+using Discord.Models;
 
 namespace Discord.Rest;
 
@@ -15,17 +17,41 @@ public static partial class Routes
         (ScopeType.Channel, channelId)
     );
 
-    public static IApiOutRoute<T> GetChannel<T>([IdHeuristic<IChannel>] ulong channelId)
+    public static IApiOutRoute<T> GetChannel<T>(
+        [IdHeuristic<IChannel>] ulong channelId
+    )
         where T : Channel
         => new ApiOutRoute<T>(nameof(GetChannel), RequestMethod.Get, $"/channels/{channelId}",
             (ScopeType.Channel, channelId));
 
-    public static IApiInOutRoute<TArgs, Channel> ModifyChannel<TArgs>([IdHeuristic<IChannel>] ulong channelId,
-        TArgs body)
-        where TArgs : ModifyChannelParams =>
-        new ApiInOutRoute<TArgs, Channel>(nameof(ModifyChannel), RequestMethod.Patch, $"/channels/{channelId}",
+    public static IApiInOutRoute<TArgs, Channel> ModifyChannel<TArgs>(
+        [IdHeuristic<IChannel>] ulong channelId,
+        TArgs body
+    )
+        where TArgs : ModifyChannelParams
+        => new ApiInOutRoute<TArgs, Channel>(
+            nameof(ModifyChannel),
+            RequestMethod.Patch,
+            $"/channels/{channelId}",
             body,
-            ContentType.JsonBody, (ScopeType.Channel, channelId));
+            ContentType.JsonBody,
+            (ScopeType.Channel, channelId)
+        );
+    
+    public static IApiInOutRoute<TArgs, TChannel> ModifyChannel<TArgs, TChannel>(
+        [IdHeuristic<IChannel>] ulong channelId,
+        TArgs body
+    )
+        where TArgs : ModifyChannelParams
+        where TChannel : class, IChannelModel
+        => new ApiInOutRoute<TArgs, TChannel>(
+            nameof(ModifyChannel),
+            RequestMethod.Patch,
+            $"/channels/{channelId}",
+            body,
+            ContentType.JsonBody,
+            (ScopeType.Channel, channelId)
+        );
 
     public static IApiRoute DeleteChannel([IdHeuristic<IChannel>] ulong channelId) =>
         new ApiRoute(nameof(DeleteChannel), RequestMethod.Delete, $"/channels/{channelId}",
@@ -261,7 +287,7 @@ public static partial class Routes
         $"/channels/{channelId}/thread-members",
         (ScopeType.Channel, channelId)
     );
-    
+
     public static IApiOutRoute<ThreadMember[]> ListThreadMembersPaged(
         [IdHeuristic<IThreadChannel>] ulong channelId,
         ulong? afterId = default,

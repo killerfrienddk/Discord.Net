@@ -7,6 +7,63 @@ namespace Discord.Net.Hanz;
 
 public static class Hierarchy
 {
+    public static bool HierarchyDFS(
+        this ITypeSymbol type,
+        Func<INamedTypeSymbol, bool> predicate,
+        out INamedTypeSymbol match,
+        Logger? logger = null
+    )
+    {
+        try
+        {
+            var queue = new Queue<INamedTypeSymbol>(type.Interfaces);
+
+            if (type.BaseType is not null)
+                queue.Enqueue(type.BaseType);
+
+            var visited = new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
+
+            while (queue.Count > 0)
+            {
+                var current = queue.Dequeue();
+
+                logger?.Log($" -> {current}");
+
+                if (!visited.Add(current))
+                {
+                    logger?.Log("   - skipped, already visited");
+                    continue;
+                }
+
+                if (predicate(current))
+                {
+                    match = current;
+                    logger?.Log("   - matched");
+                    return true;
+                }
+
+                foreach (var next in current.Interfaces)
+                {
+                    logger?.Log($"   + I: {next}");
+                    queue.Enqueue(next);
+                }
+
+                if (current.BaseType is not null)
+                {
+                    logger?.Log($"   + B: {current.BaseType}");
+                    queue.Enqueue(current.BaseType);
+                }
+            }
+
+            match = null!;
+            return false;
+        }
+        finally
+        {
+            logger?.Flush();
+        }
+    }
+    
     public static bool Implements(INamedTypeSymbol source, INamedTypeSymbol toCheck)
     {
         if (source.TypeKind is TypeKind.Interface && toCheck.TypeKind is TypeKind.Class)

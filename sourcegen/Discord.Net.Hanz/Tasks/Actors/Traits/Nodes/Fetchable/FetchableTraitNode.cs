@@ -92,13 +92,16 @@ public sealed partial class FetchableTraitNode : TraitNode
                 x => x.Target,
                 x => x.Details
                     .Where(x => GetTask<ApiRouteTask>().Routes.ContainsKey(x.Route))
-                    .Select(x =>
+                    .Select(details =>
                         new FetchableDetails(
-                            x.Kind,
-                            GetTask<ApiRouteTask>().Routes.GetValue(x.Route),
-                            x.PageParams,
-                            x.ApiType,
-                            x.PagedEntity
+                            details.Kind,
+                            GetTask<ApiRouteTask>()
+                                .Routes
+                                .GetValue(details.Route)
+                                .Routes[0],
+                            details.PageParams,
+                            details.ApiType,
+                            details.PagedEntity
                         )
                     )
             )

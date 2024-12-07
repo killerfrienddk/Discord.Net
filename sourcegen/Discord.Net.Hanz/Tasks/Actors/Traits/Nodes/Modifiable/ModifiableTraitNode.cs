@@ -19,8 +19,8 @@ public sealed class ModifiableTraitNode : TraitNode
     );
 
     private record ModifiableState(
-        EntityPropertiesTask.EntityProperties Properties,
-        RouteInfo Route,
+        EntityPropertiesTask.EntityPropertiesWithInheritance Properties,
+        RouteInfoGroup Route,
         ImmutableEquatableArray<TraitTargetAncestor> Ancestors
     );
 
@@ -44,11 +44,12 @@ public sealed class ModifiableTraitNode : TraitNode
             .MaybeMapValues((_, tuple) =>
             {
                 var (context, ancestors) = tuple;
-                
+
                 if (!GetTask<ApiRouteTask>().Routes.TryGetValue(context.Route, out var route))
                     return default;
 
-                if (!GetTask<EntityPropertiesTask>().Properties.TryGetValue(context.Parameters, out var properties))
+                if (!GetTask<EntityPropertiesTask>().PropertiesWithInherited
+                        .TryGetValue(context.Parameters, out var properties))
                     return default;
 
                 return new ModifiableState(
@@ -82,8 +83,8 @@ public sealed class ModifiableTraitNode : TraitNode
         ModifiableState state
     ) => $"Discord.IModifiable<" +
          $"{target.Id}, " +
-         $"{state.Properties.Type}, " +
-         $"{state.Properties.ParamsType}, " +
+         $"{state.Properties.Source.Type}, " +
+         $"{state.Properties.Source.ParamsType}, " +
          $"{target.Model}" +
          $">";
 
@@ -92,8 +93,8 @@ public sealed class ModifiableTraitNode : TraitNode
         ModifiableState state
     ) => $"Discord.IModifiable<" +
          $"{target.Id}, " +
-         $"{state.Properties.Type}, " +
-         $"{state.Properties.ParamsType}, " +
+         $"{state.Properties.Source.Type}, " +
+         $"{state.Properties.Source.ParamsType}, " +
          $"{target.Model}" +
          $">.Actor<{target.Type}, {target.Entity}>";
 
@@ -102,10 +103,119 @@ public sealed class ModifiableTraitNode : TraitNode
         ModifiableState state
     ) => $"Discord.IModifiable<" +
          $"{target.Id}, " +
-         $"{state.Properties.Type}, " +
-         $"{state.Properties.ParamsType}, " +
+         $"{state.Properties.Source.Type}, " +
+         $"{state.Properties.Source.ParamsType}, " +
          $"{target.Model}" +
          $">.Entity<{target.Entity}>";
+
+    private string FormatRouteInvocation(
+        TraitImplementationTarget target,
+        ModifiableState state)
+    {
+        return FormatRoute(
+            state.Route.BestMatch(
+                route =>
+                [
+                    RequestBodyMatches(route),
+                    ResponseBodyMatches(route)
+                ]
+            )!
+        );
+
+        bool RequestBodyMatches(
+            RouteInfo route
+        )
+        {
+            if (route.RequestBody is null) return false;
+
+            foreach (var generic in route.GenericParameters)
+            {
+                if (route.RequestBody.Equals(generic.Type))
+                    return true;
+            }
+
+            foreach (var properties in state.Properties)
+            {
+                if (properties.ParamsType.Equals(route.RequestBody))
+                    return true;
+            }
+
+            return false;
+        }
+
+        bool ResponseBodyMatches(
+            RouteInfo route
+        )
+        {
+            if (route.ResponseBody is null) return false;
+
+            foreach (var generic in route.GenericParameters)
+            {
+                if (route.ResponseBody.Equals(generic.Type))
+                    return true;
+            }
+
+            if (target.Model.Equals(route.ResponseBody))
+                return true;
+
+            foreach (var ancestor in state.Ancestors)
+            {
+                if (ancestor.Target.Model.Equals(route.RequestBody))
+                    return true;
+            }
+
+            return false;
+        }
+
+
+        string FormatRoute(RouteInfo route)
+        {
+            var generics = new List<string>();
+
+            foreach (var generic in route.GenericParameters)
+            {
+                if (generic.Type.Equals(route.RequestBody))
+                {
+                    generics.Add(state.Properties.Source.ParamsType.DisplayString);
+                    continue;
+                }
+
+                if (generic.Type.Equals(route.ResponseBody))
+                {
+                    generics.Add(target.Model.DisplayString);
+                    continue;
+                }
+
+                throw new InvalidOperationException($"Unresolvable generic \"{generic}\" in \"{route}\"");
+            }
+
+            return route.AsInvocation(
+                parameter =>
+                {
+                    if (parameter.IsGeneric && parameter.Type.Equals(route.RequestBody))
+                        return "args";
+
+                    if (state.Properties.Any(x => parameter.Type.Equals(x.Type)))
+                        return "args";
+
+                    if (parameter.Heuristics.Count > 0)
+                    {
+                        foreach (var selfCheck in state.Ancestors.Select(x => x.Target).Prepend(target))
+                        foreach (var heuristic in parameter.Heuristics)
+                        {
+                            if (selfCheck.Type.Equals(heuristic) || selfCheck.Entity.Equals(heuristic))
+                                return "id";
+                        }
+
+                        return $"path.Require<{parameter.Heuristics[0]}>()";
+                    }
+
+                    return null;
+                },
+                generics
+            );
+        }
+    }
 
     private TypeSpec CreateActorImplementation(
         TraitImplementationTarget target,
@@ -122,7 +232,7 @@ public sealed class ModifiableTraitNode : TraitNode
             .AddMethods([
                 new MethodSpec(
                     "ModifyRoute",
-                    $"IApiInOutRoute<{state.Properties.ParamsType}, {target.Model}>",
+                    $"IApiInOutRoute<{state.Properties.Source.ParamsType}, {target.Model}>",
                     Accessibility.Internal,
                     new([
                         "new",
@@ -131,53 +241,34 @@ public sealed class ModifiableTraitNode : TraitNode
                     Parameters: new([
                         ("IPathable", "path"),
                         (target.Id.DisplayString, "id"),
-                        (state.Properties.ParamsType.DisplayString, "args")
+                        (state.Properties.Source.ParamsType.DisplayString, "args")
                     ]),
-                    Expression: state.Route.AsInvocation(
-                        x =>
-                        {
-                            if (x.Type.Equals(state.Properties.ParamsType))
-                                return "args";
-
-                            if (x.Heuristics.Count > 0)
-                            {
-                                foreach (var heuristic in x.Heuristics)
-                                {
-                                    if (target.Type.Equals(heuristic) || target.Entity.Equals(heuristic))
-                                        return "id";
-                                }
-
-                                return $"path.Require<{x.Heuristics[0]}>()";
-                            }
-
-                            return null;
-                        }
-                    )
+                    Expression: FormatRouteInvocation(target, state)
                 ),
                 new MethodSpec(
                     "ModifyRoute",
-                    $"IApiInOutRoute<{state.Properties.ParamsType}, {target.Model}>",
+                    $"IApiInOutRoute<{state.Properties.Source.ParamsType}, {target.Model}>",
                     Modifiers: new([
                         "static"
                     ]),
                     Parameters: new([
                         ("IPathable", "path"),
                         (target.Id.DisplayString, "id"),
-                        (state.Properties.ParamsType.DisplayString, "args")
+                        (state.Properties.Source.ParamsType.DisplayString, "args")
                     ]),
                     ExplicitInterfaceImplementation: actorModifiableInterface,
                     Expression: "ModifyRoute(path, id, args)"
                 ),
                 new MethodSpec(
                     "ModifyRoute",
-                    $"IApiInRoute<{state.Properties.ParamsType}>",
+                    $"IApiInRoute<{state.Properties.Source.ParamsType}>",
                     Modifiers: new([
                         "static"
                     ]),
                     Parameters: new([
                         ("IPathable", "path"),
                         (target.Id.DisplayString, "id"),
-                        (state.Properties.ParamsType.DisplayString, "args")
+                        (state.Properties.Source.ParamsType.DisplayString, "args")
                     ]),
                     ExplicitInterfaceImplementation: GetModifiableInterface(target, state),
                     Expression: "ModifyRoute(path, id, args)"
@@ -190,7 +281,7 @@ public sealed class ModifiableTraitNode : TraitNode
 
                         return new MethodSpec(
                             "ModifyRoute",
-                            $"IApiInOutRoute<{ancestorState.Properties.ParamsType}, {x.Target.Model}>",
+                            $"IApiInOutRoute<{ancestorState.Properties.Source.ParamsType}, {x.Target.Model}>",
                             Modifiers: new([
                                 "static"
                             ]),
@@ -199,7 +290,7 @@ public sealed class ModifiableTraitNode : TraitNode
                             Parameters: new([
                                 ("IPathable", "path"),
                                 (x.Target.Id.DisplayString, "id"),
-                                (ancestorState.Properties.ParamsType.DisplayString, "args")
+                                (ancestorState.Properties.Source.ParamsType.DisplayString, "args")
                             ])
                         );
                     })
@@ -213,7 +304,7 @@ public sealed class ModifiableTraitNode : TraitNode
     {
         var entityModifiableInterface = GetEntityModifiableInterface(target, state);
         var modifiableInterface = GetModifiableInterface(target, state);
-        
+
         return TypeSpec
             .From(target.Entity)
             .AddModifiers("partial")
@@ -221,7 +312,7 @@ public sealed class ModifiableTraitNode : TraitNode
             .AddMethods([
                 new MethodSpec(
                     "ModifyRoute",
-                    $"IApiInOutRoute<{state.Properties.ParamsType}, {target.Model}>",
+                    $"IApiInOutRoute<{state.Properties.Source.ParamsType}, {target.Model}>",
                     Accessibility.Internal,
                     new([
                         "new",
@@ -230,53 +321,34 @@ public sealed class ModifiableTraitNode : TraitNode
                     Parameters: new([
                         ("IPathable", "path"),
                         (target.Id.DisplayString, "id"),
-                        (state.Properties.ParamsType.DisplayString, "args")
+                        (state.Properties.Source.ParamsType.DisplayString, "args")
                     ]),
-                    Expression: state.Route.AsInvocation(
-                        x =>
-                        {
-                            if (x.Type.Equals(state.Properties.ParamsType))
-                                return "args";
-
-                            if (x.Heuristics.Count > 0)
-                            {
-                                foreach (var heuristic in x.Heuristics)
-                                {
-                                    if (target.Type.Equals(heuristic) || target.Entity.Equals(heuristic))
-                                        return "id";
-                                }
-
-                                return $"path.Require<{x.Heuristics[0]}>()";
-                            }
-
-                            return null;
-                        }
-                    )
+                    Expression: FormatRouteInvocation(target, state)
                 ),
                 new MethodSpec(
                     "ModifyRoute",
-                    $"IApiInOutRoute<{state.Properties.ParamsType}, {target.Model}>",
+                    $"IApiInOutRoute<{state.Properties.Source.ParamsType}, {target.Model}>",
                     Modifiers: new([
                         "static"
                     ]),
                     Parameters: new([
                         ("IPathable", "path"),
                         (target.Id.DisplayString, "id"),
-                        (state.Properties.ParamsType.DisplayString, "args")
+                        (state.Properties.Source.ParamsType.DisplayString, "args")
                     ]),
                     ExplicitInterfaceImplementation: entityModifiableInterface,
                     Expression: "ModifyRoute(path, id, args)"
                 ),
                 new MethodSpec(
                     "ModifyRoute",
-                    $"IApiInRoute<{state.Properties.ParamsType}>",
+                    $"IApiInRoute<{state.Properties.Source.ParamsType}>",
                     Modifiers: new([
                         "static"
                     ]),
                     Parameters: new([
                         ("IPathable", "path"),
                         (target.Id.DisplayString, "id"),
-                        (state.Properties.ParamsType.DisplayString, "args")
+                        (state.Properties.Source.ParamsType.DisplayString, "args")
                     ]),
                     ExplicitInterfaceImplementation: GetModifiableInterface(target, state),
                     Expression: "ModifyRoute(path, id, args)"
@@ -289,7 +361,7 @@ public sealed class ModifiableTraitNode : TraitNode
 
                         return new MethodSpec(
                             "ModifyRoute",
-                            $"IApiInOutRoute<{ancestorState.Properties.ParamsType}, {x.Target.Model}>",
+                            $"IApiInOutRoute<{ancestorState.Properties.Source.ParamsType}, {x.Target.Model}>",
                             Modifiers: new([
                                 "static"
                             ]),
@@ -298,7 +370,7 @@ public sealed class ModifiableTraitNode : TraitNode
                             Parameters: new([
                                 ("IPathable", "path"),
                                 (x.Target.Id.DisplayString, "id"),
-                                (ancestorState.Properties.ParamsType.DisplayString, "args")
+                                (ancestorState.Properties.Source.ParamsType.DisplayString, "args")
                             ])
                         );
                     })

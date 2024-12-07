@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Discord.Net.Hanz.Tasks.Actors.Common;
 using Discord.Net.Hanz.Tasks.Actors.Nodes;
 using Discord.Net.Hanz.Tasks.EntityProperties;
@@ -10,29 +11,38 @@ public sealed partial class CreatableTraitNode
 {
     private IncrementalKeyValueProvider<TraitImplementationTarget, TypeSpec> CreateImplementationsProvider()
     {
-        return State.MapValues(CreateImplementation);
+        return State
+            .JoinByKey(
+                TargetAncestorsProvider!,
+                CreateImplementation!
+            );
     }
 
     private TypeSpec CreateImplementation(
         TraitImplementationTarget target,
-        CreatableTraitState state
-    )
+        CreatableTraitState state,
+        ImmutableEquatableArray<TraitTargetAncestor> ancestors)
     {
         var spec = TypeSpec.From(target.Type).AddModifiers("partial");
-        
+
         foreach (var detail in state.Details)
         {
-            ImplementDetails(ref spec, target, detail);
+            ImplementDetails(ref spec, target, detail, ancestors);
         }
 
         return spec;
     }
 
-    private void ImplementDetails(ref TypeSpec spec, TraitImplementationTarget target, TraitDetails details)
+    private void ImplementDetails(
+        ref TypeSpec spec,
+        TraitImplementationTarget target,
+        TraitDetails details,
+        ImmutableEquatableArray<TraitTargetAncestor> ancestors
+    )
     {
         if (details.Properties.HasValue)
         {
-            ImplementCreatableWithProperties(ref spec, target, details, details.Properties.Value);
+            ImplementCreatableWithProperties(ref spec, target, details, details.Properties.Value, ancestors);
             return;
         }
     }
@@ -41,14 +51,15 @@ public sealed partial class CreatableTraitNode
         ref TypeSpec spec,
         TraitImplementationTarget target,
         TraitDetails details,
-        EntityPropertiesTask.EntityPropertiesWithInheritance properties)
+        EntityPropertiesTask.EntityPropertiesWithInheritance properties,
+        ImmutableEquatableArray<TraitTargetAncestor> ancestors)
     {
         var creatableInterface = $"Discord.ICreatable<" +
                                  $"{target.Type}, " +
                                  $"{target.Entity}, " +
                                  $"{target.Id}, " +
-                                 $"{details.Properties.Value.Source.Type}, " +
-                                 $"{details.Properties.Value.Source.ParamsType}, " +
+                                 $"{properties.Source.Type}, " +
+                                 $"{properties.Source.ParamsType}, " +
                                  $"{target.Model}>";
 
         var extraParameters = new List<RouteParameter>();
@@ -74,18 +85,51 @@ public sealed partial class CreatableTraitNode
 
         spec = spec
             .AddBases(creatableInterface)
-            .AddMethods(
+            .AddMethods([
                 new MethodSpec(
                     "CreateRoute",
-                    $"IApiInOutRoute<{details.Properties.Value.Source.ParamsType}, {target.Model}>",
+                    $"IApiInOutRoute<{properties.Source.ParamsType}, {target.Model}>",
+                    Accessibility: Accessibility.Internal,
+                    Modifiers: new([
+                        "static",
+                        ..ancestors.Count > 0 ? (string[]) ["new"] : [],
+                    ]),
+                    Parameters: new([
+                        ("IPathable", "path"),
+                        (properties.Source.ParamsType.DisplayString, "args")
+                    ]),
+                    Expression: routeExpression
+                ),
+                new MethodSpec(
+                    "CreateRoute",
+                    $"IApiInOutRoute<{properties.Source.ParamsType}, {target.Model}>",
                     ExplicitInterfaceImplementation: creatableInterface,
                     Modifiers: new(["static"]),
                     Parameters: new([
                         ("IPathable", "path"),
-                        (details.Properties.Value.Source.ParamsType.DisplayString, "args")
+                        (properties.Source.ParamsType.DisplayString, "args")
                     ]),
-                    Expression: routeExpression
-                )
-            );
+                    Expression: "CreateRoute(path, args)"
+                ),
+                ..ancestors
+                    .Where(x => State.ContainsKey(x.Target))
+                    .SelectMany(ancestor => State.GetValue(ancestor.Target)
+                        .Details
+                        .Where(x => x.Route.Equals(details.Route) && x.Properties.HasValue)
+                        .Select(x =>
+                            new MethodSpec(
+                                "CreateRoute",
+                                $"IApiInOutRoute<{x.Properties!.Value.Source.ParamsType}, {ancestor.Target.Model}>",
+                                ExplicitInterfaceImplementation: ancestor.Target.Type.DisplayString,
+                                Modifiers: new(["static"]),
+                                Parameters: new([
+                                    ("IPathable", "path"),
+                                    (x.Properties!.Value.Source.ParamsType.DisplayString, "args")
+                                ]),
+                                Expression: "CreateRoute(path, args)"
+                            )
+                        )
+                    )
+            ]);
     }
 }

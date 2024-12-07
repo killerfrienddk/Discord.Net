@@ -1,3 +1,4 @@
+using System.Collections;
 using Discord.Net.Hanz.Utils;
 using Discord.Net.Hanz.Utils.Bakery;
 using Microsoft.CodeAnalysis;
@@ -23,10 +24,22 @@ public sealed class EntityPropertiesTask : GenerationTask
     public readonly record struct EntityPropertiesWithInheritance(
         EntityProperties Source,
         ImmutableEquatableArray<EntityProperties> Inherited
-    )
+    ) : IEnumerable<EntityProperties>
     {
         public IEnumerable<EntityProperty> AllProperties
             => [..Source.Properties, ..Inherited.SelectMany(x => x.Properties)];
+
+        public IEnumerator<EntityProperties> GetEnumerator()
+        {
+            yield return Source;
+
+            foreach (var inherited in Inherited)
+            {
+                yield return inherited;
+            }
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 
     public IncrementalKeyValueProvider<string, EntityProperties> Properties { get; }
@@ -60,7 +73,7 @@ public sealed class EntityPropertiesTask : GenerationTask
     {
         if (context.SemanticModel.GetDeclaredSymbol(context.Node, token) is not INamedTypeSymbol symbol)
             return null;
-        
+
         if (!IsEntityProperties(symbol))
         {
             return null;
@@ -73,26 +86,32 @@ public sealed class EntityPropertiesTask : GenerationTask
             .Select(x => new EntityProperty(x.Name, new(x.Type), x.IsRequired))
             .ToImmutableEquatableArray();
 
-        var paramsType = symbol
-            .AllInterfaces
-            .First(x => x is {Name: "IEntityProperties", TypeArguments.Length: 1})
-            .TypeArguments[0];
-        
+        if (
+            !symbol.HierarchyDFS(
+                x => x is {Name: "IEntityProperties", TypeArguments.Length: 1},
+                out var entityProperties
+            )
+        )
+        {
+            Logger.Warn($"Missing IEntityProperties for {symbol}");
+            Logger.Flush();
+            return null;
+        }
+
         var result = new EntityProperties(
             new(symbol),
-            new(paramsType),
+            new(entityProperties.TypeArguments[0]),
             properties,
             TypeUtils.GetBaseTypes(symbol)
                 .Where(IsEntityProperties)
                 .Select(x => x.ToDisplayString())
                 .ToImmutableEquatableArray()
         );
-        
-        
-        
+
+
         Logger.Log($"{symbol} mapped to {result}");
         Logger.Flush();
-        
+
         return result;
     }
 

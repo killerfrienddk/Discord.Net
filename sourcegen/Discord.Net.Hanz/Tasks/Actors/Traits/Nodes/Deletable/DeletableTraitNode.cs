@@ -36,10 +36,10 @@ public sealed class DeletableTraitNode : TraitNode
                 }
             )
             .WhereNotNull()
-            .DependsOn(GetTask<ApiRouteTask>().Routes)
             .KeyedBy(x => x.Actor, x => x.Route)
             .TransformKeyVia(TargetsProvider)
-            .TransformValuesVia(GetTask<ApiRouteTask>().Routes);
+            .TransformValuesVia(GetTask<ApiRouteTask>().Routes)
+            .MapValues((_, route) => route.Routes[0]);
 
         context.RegisterSourceOutput(
             DeletableActors

@@ -1,0 +1,17 @@
+﻿using Discord.Entities.Channels.Threads;
+using Discord.Models;
+using Discord.Models.Json;
+using Discord.Rest;
+
+namespace Discord;
+
+public partial interface IThreadChannel
+{
+    Discord.Models.IThreadChannelModel IEntityOf<IThreadChannelModel>.GetModel() => GetModel();
+
+    Discord.Models.IGuildChannelModel IGuildChannel.GetModel() => GetModel();
+
+    Discord.Models.IGuildChannelModel IEntityOf<IGuildChannelModel>.GetModel() => GetModel();
+
+    Discord.Models.IChannelModel IEntityOf<IChannelModel>.GetModel() => GetModel();
+}

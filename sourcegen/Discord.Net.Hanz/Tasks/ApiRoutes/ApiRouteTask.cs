@@ -4,13 +4,20 @@ using Discord.Net.Hanz.Utils.Bakery;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
-using CSharpExtensions = Microsoft.CodeAnalysis.CSharp.CSharpExtensions;
 
 namespace Discord.Net.Hanz.Tasks.ApiRoutes;
 
+using RouteParameterSpec = (
+    string Name,
+    TypeRef Type,
+    ImmutableEquatableArray<TypeRef> Heuristics,
+    string? Default,
+    bool IsGeneric
+    );
+
 public class ApiRouteTask : GenerationTask
 {
-    public IncrementalKeyValueProvider<string, RouteInfo> Routes { get; }
+    public IncrementalKeyValueProvider<string, RouteInfoGroup> Routes { get; }
 
     public ApiRouteTask(
         IncrementalGeneratorInitializationContext context,
@@ -23,7 +30,8 @@ public class ApiRouteTask : GenerationTask
                 Transform
             )
             .WhereNotNull()
-            .KeyedBy(x => x.Name);
+            .GroupBy(x => x.Name)
+            .ToKeyed((_, routes) => new RouteInfoGroup(routes.ToImmutableEquatableArray()));
     }
 
     private RouteInfo? Transform(GeneratorSyntaxContext context, CancellationToken token)
@@ -41,8 +49,11 @@ public class ApiRouteTask : GenerationTask
     {
         if (field.Declaration.Variables.Count != 1)
             return null;
-        
-        if (model.GetDeclaredSymbol(field.Declaration.Variables[0]) is not IFieldSymbol {Type: INamedTypeSymbol routeType} symbol)
+
+        if (model.GetDeclaredSymbol(field.Declaration.Variables[0]) is not IFieldSymbol
+            {
+                Type: INamedTypeSymbol routeType
+            } symbol)
         {
             return null;
         }
@@ -119,7 +130,7 @@ public class ApiRouteTask : GenerationTask
             var heuristics = new List<TypeRef>(
                 parameter.GetAttributes()
                     .Where(x => x.AttributeClass is {Name: "IdHeuristicAttribute", TypeArguments.Length: 1})
-                    .Select(x => new TypeRef(x.AttributeClass.TypeArguments[0]))
+                    .Select(x => new TypeRef(x.AttributeClass!.TypeArguments[0]))
             );
 
             var type = new TypeRef(parameter.Type);
@@ -130,8 +141,22 @@ public class ApiRouteTask : GenerationTask
                 heuristics.ToImmutableEquatableArray(),
                 parameter.HasExplicitDefaultValue
                     ? SyntaxUtils.FormatLiteral(parameter.ExplicitDefaultValue, type)
-                    : null
+                    : null,
+                parameter.Type is ITypeParameterSymbol
             ));
+        }
+
+        foreach (var typeParameter in symbol.TypeParameters)
+        {
+            builder.Generics.Add(
+                new RouteGenericParameterInfo(
+                    typeParameter.Name,
+                    new(typeParameter),
+                    typeParameter.ConstraintTypes
+                        .Select(x => new TypeRef(x))
+                        .ToImmutableEquatableArray()
+                )
+            );
         }
 
         return builder.Build(RouteKind.Method);
@@ -233,7 +258,7 @@ public class ApiRouteTask : GenerationTask
     private static string GetRouteName(ISymbol symbol, ExpressionSyntax expression, SemanticModel model)
     {
         if (model.GetOperation(expression) is INameOfOperation {Argument.ConstantValue.HasValue: true} nameOf)
-            return nameOf.Argument.ConstantValue.Value.ToString();
+            return nameOf.Argument.ConstantValue.Value!.ToString();
 
         return symbol.Name;
     }
@@ -248,8 +273,9 @@ public class ApiRouteTask : GenerationTask
 
         public Dictionary<string, string> RouteDetails { get; } = [];
 
-        public List<(string Name, TypeRef Type, ImmutableEquatableArray<TypeRef> Heuristics, string? Default)>
-            Parameters { get; } = [];
+        public List<RouteParameterSpec> Parameters { get; } = [];
+
+        public List<RouteGenericParameterInfo> Generics { get; } = [];
 
         public RouteInfo? Build(RouteKind kind)
         {
@@ -269,10 +295,11 @@ public class ApiRouteTask : GenerationTask
                     : null,
                 Parameters
                     .Select(x =>
-                        new RouteParameter(x.Name, x.Type, x.Heuristics, x.Default)
+                        new RouteParameter(x.Name, x.Type, x.Heuristics, x.Default, x.IsGeneric)
                     )
                     .ToImmutableEquatableArray(),
-                kind
+                kind,
+                Generics.ToImmutableEquatableArray()
             );
         }
     }

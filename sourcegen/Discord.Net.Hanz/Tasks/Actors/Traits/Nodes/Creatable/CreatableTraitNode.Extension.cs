@@ -84,7 +84,7 @@ public sealed partial class CreatableTraitNode
         }
 
         parameters.AddRange([
-            ("RequestOptions", "options", "null"),
+            ("RequestOptions?", "options", "null"),
             ("CancellationToken", "token", "default"),
         ]);
 
