@@ -2,5 +2,5 @@
 
 public partial interface IThreadChannelModel
 {
-    ulong? IGuildChannelModel.ParentId => ParentId;
+    Discord.Optional<ulong?> IGuildChannelModel.ParentId => ParentId;
 }
