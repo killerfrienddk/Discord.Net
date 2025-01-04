@@ -4,6 +4,6 @@ namespace Discord.Models;
 public partial interface IInteractionCallbackResourceModel : IModel
 {
     int Type { get; }
-    IActivityInstanceModel? ActivityInstance { get; }
-    IMessageModel? Message { get; }
+    Optional<IActivityInstanceModel> ActivityInstance { get; }
+    Optional<ModelOrId<IMessageModel, ulong>> Message { get; }
 }

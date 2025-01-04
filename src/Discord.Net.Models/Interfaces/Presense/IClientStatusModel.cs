@@ -1,8 +1,9 @@
 namespace Discord.Models;
 
-public interface IClientStatusModel
+[ModelEquality]
+public partial interface IClientStatusModel : IModel
 {
-    string? Desktop { get; }
-    string? Mobile { get; }
-    string? Web { get; }
+    Optional<string> Desktop { get; }
+    Optional<string> Mobile { get; }
+    Optional<string> Web { get; }
 }

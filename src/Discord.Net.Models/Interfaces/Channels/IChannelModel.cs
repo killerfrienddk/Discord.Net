@@ -1,7 +1,7 @@
 namespace Discord.Models;
 
-[ModelEquality]
+[ModelEquality, HasPartialVariant]
 public partial interface IChannelModel : IEntityModel<ulong>
 {
-    uint Type { get; }
+    int Type { get; }
 }

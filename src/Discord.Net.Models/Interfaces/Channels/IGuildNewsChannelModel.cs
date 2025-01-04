@@ -1,7 +1,4 @@
 namespace Discord.Models;
 
-[ModelEquality]
-public partial interface IGuildNewsChannelModel : IGuildTextChannelModel
-{
-
-}
+[ModelEquality, HasPartialVariant]
+public partial interface IGuildNewsChannelModel : IGuildTextChannelModel;

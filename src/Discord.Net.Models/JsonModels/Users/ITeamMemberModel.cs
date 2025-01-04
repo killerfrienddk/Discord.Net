@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace Discord.Models.Json;
 
-public sealed class TeamMember : IModelSource, IModelSourceOf<IPartialUserModel>, ITeamMember
+public sealed class ITeamMemberModel : IModelSource, IModelSourceOf<IPartialUserModel>, ITeamMemberModel
 {
     [JsonPropertyName("membership_state")]
     public required int MembershipState { get; set; }

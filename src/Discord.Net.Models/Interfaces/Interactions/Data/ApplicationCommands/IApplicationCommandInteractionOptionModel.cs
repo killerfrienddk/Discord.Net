@@ -4,7 +4,7 @@ public interface IApplicationCommandInteractionOptionModel
 {
     string Name { get; }
     int Type { get; }
-    object? Value { get; }
-    IEnumerable<IApplicationCommandInteractionOptionModel>? Options { get; }
-    bool? IsFocused { get; }
+    Optional<object> Value { get; }
+    Optional<IReadOnlyCollection<IApplicationCommandInteractionOptionModel>> Options { get; }
+    Optional<bool> IsFocused { get; }
 }

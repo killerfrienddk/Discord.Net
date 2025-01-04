@@ -11,7 +11,7 @@ public sealed class Team : ITeamModel
     public ulong Id { get; set; }
 
     [JsonPropertyName("members")]
-    public required TeamMember[] TeamMembers { get; set; }
+    public required ITeamMemberModel[] TeamMembers { get; set; }
 
     [JsonPropertyName("name")]
     public required string Name { get; set; }
@@ -19,6 +19,6 @@ public sealed class Team : ITeamModel
     [JsonPropertyName("owner_user_id")]
     public ulong OwnerUserId { get; set; }
 
-    IEnumerable<ITeamMember> ITeamModel.Members => TeamMembers;
+    IEnumerable<ITeamMemberModel> ITeamModel.Members => TeamMembers;
     ulong ITeamModel.OwnerId => OwnerUserId;
 }

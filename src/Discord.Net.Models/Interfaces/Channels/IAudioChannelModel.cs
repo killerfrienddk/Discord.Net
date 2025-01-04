@@ -1,8 +1,8 @@
 namespace Discord.Models;
 
-[ModelEquality]
+[ModelEquality, HasPartialVariant]
 public partial interface IAudioChannelModel : IChannelModel
 {
-    string? RTCRegion { get; }
-    int? VideoQualityMode { get; }
+    Optional<string?> RTCRegion { get; }
+    Optional<int> VideoQualityMode { get; }
 }

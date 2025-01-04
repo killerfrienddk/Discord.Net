@@ -6,9 +6,9 @@ public interface IApplicationRoleConnectionMetadataModel :
     int Type { get; }
     string Key { get; }
     string Name { get; }
-    IDictionary<string, string>? NameLocalizations { get; }
+    Optional<IReadOnlyDictionary<string, string>> NameLocalizations { get; }
     string Description { get; }
-    IDictionary<string, string>? DescriptionLocalization { get; }
+    Optional<IReadOnlyDictionary<string, string>> DescriptionLocalization { get; }
 
     string IEntityModel<string>.Id => Key;
 }

@@ -298,8 +298,18 @@ public static class TypeUtils
             current = current.BaseType;
         }
     }
-
+    
     public static IEnumerable<ITypeSymbol> GetBaseTypes(ITypeSymbol type)
+    {
+        var current = type.BaseType;
+        while (current is not null)
+        {
+            yield return current;
+            current = current.BaseType;
+        }
+    }
+
+    public static IEnumerable<INamedTypeSymbol> GetBaseTypes(INamedTypeSymbol type)
     {
         var current = type.BaseType;
         while (current is not null)

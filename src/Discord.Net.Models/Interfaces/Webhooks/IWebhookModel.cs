@@ -4,7 +4,7 @@ namespace Discord.Models;
 public partial interface IWebhookModel : IEntityModel<ulong>
 {
     int Type { get; }
-    ulong? UserId { get; }
+    Optional<ModelOrId<IUserModel, ulong>> User { get; }
     string? Name { get; }
     string? Avatar { get; }
     ulong? ApplicationId { get; }

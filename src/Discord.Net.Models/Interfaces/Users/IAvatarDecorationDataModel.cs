@@ -1,6 +1,7 @@
 namespace Discord.Models;
 
-public interface IAvatarDecorationDataModel
+[ModelEquality]
+public partial interface IAvatarDecorationDataModel : IModel
 {
     string Asset { get; }
     ulong SkuId { get; }

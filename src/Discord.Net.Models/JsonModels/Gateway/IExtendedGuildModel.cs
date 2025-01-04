@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace Discord.Models.Json;
 
 [DiscriminatedUnionType(nameof(Unavailable), false)]
-public sealed partial class ExtendedGuild : GuildCreated, IExtendedGuild
+public sealed partial class IExtendedGuildModel : GuildCreated, IExtendedGuildModel
 {
     [JsonIgnore, JsonExtend]
     public Guild Guild { get; set; } = null!;
@@ -38,14 +38,14 @@ public sealed partial class ExtendedGuild : GuildCreated, IExtendedGuild
     [JsonPropertyName("guild_scheduled_events")]
     public required GuildScheduledEvent[] GuildScheduledEvents { get; set; }
 
-    IEnumerable<IPartialVoiceStateModel> IExtendedGuild.VoiceStates => VoiceStates;
-    IEnumerable<IMemberModel> IExtendedGuild.Members => Members;
+    IEnumerable<IPartialVoiceStateModel> IExtendedGuildModel.VoiceStates => VoiceStates;
+    IEnumerable<IMemberModel> IExtendedGuildModel.Members => Members;
 
-    IEnumerable<IGuildChannelModel> IExtendedGuild.Channels => Channels;
+    IEnumerable<IGuildChannelModel> IExtendedGuildModel.Channels => Channels;
 
-    IEnumerable<IThreadChannelModel> IExtendedGuild.Threads => Threads;
+    IEnumerable<IThreadChannelModel> IExtendedGuildModel.Threads => Threads;
 
-    IEnumerable<IPresenceModel> IExtendedGuild.Presences => Presences;
-    IEnumerable<IStageInstanceModel> IExtendedGuild.StageInstances => StageInstances;
-    IEnumerable<IGuildScheduledEventModel> IExtendedGuild.GuildScheduledEvents => GuildScheduledEvents;
+    IEnumerable<IPresenceModel> IExtendedGuildModel.Presences => Presences;
+    IEnumerable<IStageInstanceModel> IExtendedGuildModel.StageInstances => StageInstances;
+    IEnumerable<IGuildScheduledEventModel> IExtendedGuildModel.GuildScheduledEvents => GuildScheduledEvents;
 }

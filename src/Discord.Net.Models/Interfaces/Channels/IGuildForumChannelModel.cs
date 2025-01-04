@@ -2,14 +2,14 @@ using Discord.Models.Json;
 
 namespace Discord.Models;
 
-[ModelEquality]
+[ModelEquality, HasPartialVariant]
 public partial interface IGuildForumChannelModel : IThreadableChannelModel
 {
     bool IsNsfw { get; }
     string? Topic { get; }
-    int? RatelimitPerUser { get; }
-    DiscordEmojiId? DefaultReactionEmoji { get; }
-    IEnumerable<ITagModel> AvailableTags { get; }
+    Optional<int> RatelimitPerUser { get; }
+    Optional<DiscordEmojiId?> DefaultReactionEmoji { get; }
+    IReadOnlyCollection<ITagModel> AvailableTags { get; }
     int? DefaultSortOrder { get; }
     int DefaultForumLayout { get; }
 }

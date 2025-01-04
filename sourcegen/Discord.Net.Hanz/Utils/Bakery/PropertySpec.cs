@@ -16,11 +16,14 @@ public record PropertySpec(
     string? Setter = null,
     string? Expression = null,
     string? EqualsClause = null,
-    bool Init = false
-)
+    bool Init = false,
+    ImmutableEquatableArray<string>? Attributes = null)
 {
     public ImmutableEquatableArray<string> Modifiers { get; init; }
         = Modifiers ?? ImmutableEquatableArray<string>.Empty;
+
+    public ImmutableEquatableArray<string> Attributes { get; init; } =
+        Attributes ?? ImmutableEquatableArray<string>.Empty;
 
     public bool HasAutoGetter => AutoGet is not Accessibility.NotApplicable;
     public bool HasAutoSetter => AutoSet is not Accessibility.NotApplicable;
@@ -50,6 +53,11 @@ public record PropertySpec(
     {
         var builder = new StringBuilder();
 
+        foreach (var attribute in Attributes)
+        {
+            builder.AppendLine(attribute);
+        }
+        
         if (Accessibility is not Accessibility.NotApplicable)
             builder.Append(SyntaxFacts.GetText(Accessibility)).Append(' ');
 

@@ -5,7 +5,7 @@ public partial interface IApplicationCommandOptionModel : IModel
 {
     int Type { get; }
     string Name { get; }
-    IReadOnlyDictionary<string, string>? NameLocalizations { get; }
+    Optional<IReadOnlyDictionary<string, string>?> NameLocalizations { get; }
     string Description { get; }
-    IReadOnlyDictionary<string, string>? DescriptionLocalizations { get; }
+    Optional<IReadOnlyDictionary<string, string>?> DescriptionLocalizations { get; }
 }

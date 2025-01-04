@@ -3,5 +3,5 @@ namespace Discord.Models;
 [ModelEquality]
 public partial interface IPrimaryEntryPointApplicationCommandModel : IApplicationCommandModel
 {
-    int? Handler { get; }
+    int Handler { get; }
 }

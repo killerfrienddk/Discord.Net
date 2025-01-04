@@ -2,5 +2,5 @@ namespace Discord.Models;
 
 public interface IBlockMessageMetadataModel : IAutoModerationActionMetadataModel
 {
-    string? CustomMessage { get; }
+    Optional<string> CustomMessage { get; }
 }

@@ -6,7 +6,7 @@ public partial interface IGuildTemplateModel : IEntityModel<string>
     string Name { get; }
     string? Description { get; }
     int UsageCount { get; }
-    ulong CreatorId { get; }
+    ModelOrId<IUserModel, ulong> Creator { get; }
     DateTimeOffset CreatedAt { get; }
     DateTimeOffset UpdatedAt { get; }
     ulong SourceGuildId { get; }

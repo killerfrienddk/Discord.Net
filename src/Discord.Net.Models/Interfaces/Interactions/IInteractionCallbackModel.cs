@@ -4,8 +4,8 @@ namespace Discord.Models;
 public partial interface IInteractionCallbackModel : IEntityModel<ulong>
 {
     int Type { get; }
-    string? ActivityInstanceId { get; }
-    ulong? ResponseMessageId { get; }
-    bool? ResponseMessageLoading { get; }
-    bool? ResponseMessageEphemeral { get; }
+    Optional<string> ActivityInstanceId { get; }
+    Optional<ulong> ResponseMessageId { get; }
+    Optional<bool> ResponseMessageLoading { get; }
+    Optional<bool> ResponseMessageEphemeral { get; }
 }

@@ -1,12 +1,12 @@
 namespace Discord.Models;
 
-[ModelEquality]
+[ModelEquality, HasPartialVariant]
 public partial interface IGuildChannelModel : IChannelModel
 {
     string Name { get; }
     ulong GuildId { get; }
-    ulong? ParentId { get; }
+    Optional<ulong?> ParentId { get; }
     int Position { get; }
-    IEnumerable<IOverwriteModel> Permissions { get; }
-    int? Flags { get; }
+    IReadOnlyCollection<IOverwriteModel> PermissionOverwrites { get; }
+    Optional<int> Flags { get; }
 }

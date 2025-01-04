@@ -1,7 +1,8 @@
 namespace Discord.Models;
 
-public interface IModalDataModel : IInteractionDataModel
+[ModelEquality]
+public partial interface IModalDataModel : IInteractionDataModel
 {
     string CustomId { get; }
-    IEnumerable<IMessageComponentModel> Components { get; }
+    IReadOnlyCollection<IMessageComponentModel> Components { get; }
 }

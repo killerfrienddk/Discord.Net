@@ -6,14 +6,10 @@ namespace Discord.Models;
 public partial interface IButtonComponentModel : IMessageComponentModel
 {
     int Style { get; }
-
-    string? Label { get; }
-
-    DiscordEmojiId? Emote { get; }
-
-    string? CustomId { get; }
-
-    string? Url { get; }
-
-    bool? IsDisabled { get; }
+    Optional<string> Label { get; }
+    Optional<DiscordEmojiId> Emote { get; }
+    Optional<string> CustomId { get; }
+    Optional<ulong> SkuId { get; }
+    Optional<string> Url { get; }
+    Optional<bool> IsDisabled { get; }
 }

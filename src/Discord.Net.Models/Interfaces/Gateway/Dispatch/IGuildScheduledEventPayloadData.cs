@@ -1,6 +1,3 @@
 namespace Discord.Models;
 
-public interface IGuildScheduledEventPayloadData : IGatewayPayloadData, IGuildScheduledEventModel
-{
-
-}
+public interface IGuildScheduledEventPayloadData : IGatewayPayloadData, IGuildScheduledEventModel;

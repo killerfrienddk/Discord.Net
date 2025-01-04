@@ -4,5 +4,5 @@ namespace Discord.Models;
 public partial interface IThreadableChannelModel : IGuildChannelModel
 {
     int DefaultAutoArchiveDuration { get; }
-    int? DefaultThreadRateLimitPerUser { get; }
+    Optional<int> DefaultThreadRateLimitPerUser { get; }
 }

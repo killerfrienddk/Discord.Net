@@ -1,4 +1,5 @@
-﻿using Discord.Net.Hanz.Nodes;
+﻿using System.Collections.Immutable;
+using Discord.Net.Hanz.Nodes;
 using Discord.Net.Hanz.Utils;
 using Discord.Net.Hanz.Utils.Bakery;
 using Microsoft.CodeAnalysis;
@@ -36,6 +37,19 @@ public sealed class JsonUnionNode : Node
             )
             .WhereNotNull()
             .GroupBy(x => x.ContainingType);
+    }
+
+    private static void CreateConverter(TypeRef type, ImmutableArray<UnionProperty> properties)
+    {
+        var spec = new TypeSpec(
+            $"{type.Name}UnionConverter",
+            TypeKind.Class,
+            Bases: new([
+                $"JsonConverter<{type}>"
+            ])
+        );
+        
+        
     }
 
     private UnionProperty? MapUnionProperty(GeneratorAttributeSyntaxContext context, CancellationToken token)

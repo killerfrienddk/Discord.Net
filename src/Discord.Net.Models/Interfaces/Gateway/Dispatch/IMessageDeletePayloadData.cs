@@ -4,5 +4,5 @@ public interface IMessageDeletePayloadData : IGatewayPayloadData
 {
     ulong Id { get; }
     ulong ChannelId { get; }
-    ulong? GuildId { get; }
+    Optional<ulong> GuildId { get; }
 }

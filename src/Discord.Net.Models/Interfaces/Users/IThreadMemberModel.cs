@@ -2,12 +2,11 @@
 namespace Discord.Models;
 
 [ModelEquality]
-public partial interface IThreadMemberModel : IEntityModel<ulong>
+public partial interface IThreadMemberModel : IModel
 {
-    ulong? ThreadId { get; }
-    ulong? UserId { get; }
+    Optional<ulong> ThreadId { get; }
+    Optional<ulong> UserId { get; }
     DateTimeOffset JoinTimestamp { get; }
     int Flags { get; }
-
-    ulong IEntityModel<ulong>.Id => UserId ?? 0;
+    Optional<ModelOrId<IMemberModel, ulong>> Member { get; }
 }

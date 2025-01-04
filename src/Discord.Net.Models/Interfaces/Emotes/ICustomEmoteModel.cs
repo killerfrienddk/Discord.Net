@@ -12,8 +12,9 @@ public partial interface ICustomEmoteModel :
     bool IsManaged { get; }
     bool IsAnimated { get; }
     bool IsAvailable { get; }
-    ulong? UserId { get; }
-
+    
+    Optional<ModelOrId<IUserModel, ulong>> User { get; }
+    
     DiscordEmojiId IEntityModel<DiscordEmojiId>.Id => new(Name, Id, IsAnimated);
     ulong IEntityModel<ulong>.Id => Id;
 }

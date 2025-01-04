@@ -4,7 +4,7 @@ public interface ISelectMenuOptionModel
 {
     string Label { get; }
     string Value { get; }
-    string? Description { get; }
-    DiscordEmojiId? Emote { get; }
-    bool? IsDefault { get; }
+    Optional<string> Description { get; }
+    Optional<DiscordEmojiId> Emote { get; }
+    Optional<bool> IsDefault { get; }
 }

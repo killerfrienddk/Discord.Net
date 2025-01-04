@@ -4,5 +4,5 @@ public interface IBulkMessageDeletePayloadData : IGatewayPayloadData
 {
     ulong[] Ids { get; }
     ulong ChannelId { get; }
-    ulong? GuildId { get; }
+    Optional<ulong> GuildId { get; }
 }

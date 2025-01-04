@@ -6,9 +6,9 @@ public partial interface ITextInputComponentModel : IMessageComponentModel
     string CustomId { get; }
     int Style { get; }
     string Label { get; }
-    int? MinLength { get; }
-    int? MaxLength { get; }
-    bool? IsRequired { get; }
-    string? Value { get; }
-    string? Placeholder { get; }
+    Optional<int> MinLength { get; }
+    Optional<int> MaxLength { get; }
+    Optional<bool> IsRequired { get; }
+    Optional<string> Value { get; }
+    Optional<string> Placeholder { get; }
 }

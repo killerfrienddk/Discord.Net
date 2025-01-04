@@ -2,12 +2,12 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Discord.Models;
 
-public interface IPartial<in T> : IPartial
+public interface IPartialModel<in T> : IPartialModel
 {
     bool ApplyTo(T model);
 }
 
-public interface IPartial
+public interface IPartialModel : IModel
 {
     Type UnderlyingModelType { get; }
     

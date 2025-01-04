@@ -7,9 +7,9 @@ public partial interface IUserModel : IEntityModel<ulong>
     string Discriminator { get; }
     string? GlobalName { get; }
     string? Avatar { get; }
-    bool? IsBot { get; }
-    bool? IsSystem { get; }
-    int? Flags { get; }
-    int? PublicFlags { get; }
-    IAvatarDecorationDataModel? AvatarDecoration { get; }
+    Optional<bool> IsBot { get; }
+    Optional<bool> IsSystem { get; }
+    Optional<int> Flags { get; }
+    Optional<int> PublicFlags { get; }
+    Optional<IAvatarDecorationDataModel?> AvatarDecoration { get; }
 }

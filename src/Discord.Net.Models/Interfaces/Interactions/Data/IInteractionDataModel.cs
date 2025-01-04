@@ -1,3 +1,3 @@
 namespace Discord.Models;
 
-public interface IInteractionDataModel;
+public interface IInteractionDataModel : IModel;

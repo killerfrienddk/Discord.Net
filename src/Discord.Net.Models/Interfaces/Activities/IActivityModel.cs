@@ -1,40 +1,24 @@
 namespace Discord.Models;
 
+/// <summary>
+/// https://discord.com/developers/docs/events/gateway-events#activity-object
+/// </summary>
 [ModelEquality]
 public partial interface IActivityModel : IModel
 {
-    string? Url { get; }
     string Name { get; }
     int Type { get; }
-    string? Details { get; }
-    string? State { get; }
-    int? Flags { get; }
+    Optional<string?> Url { get; }
     DateTimeOffset CreatedAt { get; }
-    IEmojiModel? Emoji { get; } // TODO: should not be this kind of model
-    ulong? ApplicationId { get; }
-
-
-    #region Assets
-    string? LargeImage { get; }
-    string? LargeText { get; }
-    string? SmallImage { get; }
-    string? SmallText { get; }
-    #endregion
-
-    #region Party
-    string? PartyId { get; }
-    long[]? PartySize { get; }
-    #endregion
-
-    #region Secrets
-    string? JoinSecret { get; }
-    string? SpectateSecret { get; }
-    string? MatchSecret { get; }
-    #endregion
-
-    #region Timestamps
-    DateTimeOffset? TimestampStart { get; }
-    DateTimeOffset? TimestampEnd { get; }
-    #endregion
-
+    Optional<IActivityTimestampsModel> Timestamps { get; }
+    Optional<ulong> ApplicationId { get; }
+    Optional<string?> Details { get; }
+    Optional<string?> State { get; }
+    Optional<IActivityEmojiModel?> Emoji { get; }
+    Optional<IActivityPartyModel> Party { get; }
+    Optional<IActivityAssetsModel> Assets { get; }
+    Optional<IActivitySecretsModel> Secrets { get; }
+    Optional<bool> IsInstance { get; }
+    Optional<int> Flags { get; }
+    IReadOnlyCollection<IActivityButtonModel> Buttons { get; }
 }

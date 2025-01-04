@@ -1,11 +1,12 @@
 namespace Discord.Models;
 
-public interface IResolvedDataModel
+[ModelEquality]
+public partial interface IResolvedDataModel : IModel
 {
-    IEnumerable<string>? Users { get; }
-    IEnumerable<string>? Members { get; }
-    IEnumerable<string>? Roles { get; }
-    IEnumerable<string>? Channels { get; }
-    IEnumerable<string>? Messages { get; }
-    IEnumerable<string>? Attachments { get; }
+    Optional<IReadOnlyDictionary<ulong, IUserModel>> Users { get; }
+    Optional<IReadOnlyDictionary<ulong, IPartialMemberModel>> Members { get; }
+    Optional<IReadOnlyDictionary<ulong, IRoleModel>> Roles { get; }
+    Optional<IReadOnlyDictionary<ulong, IPartialChannelModel>> Channels { get; }
+    Optional<IReadOnlyDictionary<ulong, IPartialMessageModel>> Messages { get; }
+    Optional<IReadOnlyDictionary<ulong, IAttachmentModel>> Attachments { get; }
 }

@@ -9,13 +9,11 @@ namespace Discord;
 //Based on https://github.com/dotnet/coreclr/blob/master/src/mscorlib/src/System/Nullable.cs
 [DebuggerDisplay(@"{DebuggerDisplay,nq}")]
 [JsonConverter(typeof(OptionalConverter))]
-public readonly struct Optional<T>
+public readonly struct Optional<T> : 
+    IEquatable<Optional<T>>
 {
     public static readonly Optional<T> Unspecified = default;
-    private readonly T _value;
-
-    /// <summary> Gets the value for this parameter. </summary>
-    /// <exception cref="InvalidOperationException" accessor="get">This property has no value set.</exception>
+    
     public T Value
     {
         get
@@ -25,84 +23,40 @@ public readonly struct Optional<T>
             return _value;
         }
     }
-    /// <summary> Returns true if this value has been specified. </summary>
     public bool IsSpecified { get; }
+    
+    private readonly T _value;
 
-    /// <summary> Creates a new Parameter with the provided value. </summary>
     public Optional(T value)
     {
         _value = value;
         IsSpecified = true;
     }
 
-    public T? GetValueOrDefault() => _value;
-
-    [return: NotNullIfNotNull(nameof(defaultValue))]
-    public T? GetValueOrDefault(T? defaultValue) => IsSpecified ? _value : defaultValue;
-
-    public T Or(T other)
-        => IsSpecified ? _value ?? other : other;
-
-    public Optional<T> Or(Optional<T> other)
-        => IsSpecified ? this : other;
-
-    public override bool Equals(object? other)
+    public bool Equals(Optional<T> other, IEqualityComparer<T> comparer)
     {
-        if(other is Optional<T> otherOptional)
-        {
-            return IsSpecified
-                ? otherOptional.IsSpecified &&
-                    (_value?.Equals(otherOptional._value) ?? otherOptional._value is null)
-                : !otherOptional.IsSpecified;
-        }
-
-        if (!IsSpecified)
-            return other == null;
-        if (other is null)
-            return _value is null;
-        return _value?.Equals(other) ?? false;
-    }
-    public override int GetHashCode() => IsSpecified ? _value?.GetHashCode() ?? 0 : 0;
-    public override string? ToString() => IsSpecified ? _value?.ToString() : null;
-
-    public U? Map<U>(U value)
-        where U : struct
-        => IsSpecified ? value : null;
-
-    public Optional<U> Map<U>(Func<T, U> func)
-    {
-        return IsSpecified ? Optional.Some(func(_value)) : Optional<U>.Unspecified;
+        if (IsSpecified != other.IsSpecified)
+            return false;
+        
+        return !IsSpecified || comparer.Equals(Value, other.Value);
     }
 
-    public Optional<U> Map<U>(Func<T, Optional<U>> func)
-    {
-        return IsSpecified ? func(_value) : Optional<U>.Unspecified;
-    }
+    public bool Equals(Optional<T> other)
+        => Equals(other, EqualityComparer<T>.Default);
 
-    private string DebuggerDisplay => IsSpecified ? _value?.ToString() ?? "<null>" : "<unspecified>";
+    public override bool Equals([NotNullWhen(true)] object? obj)
+        => obj is Optional<T> other && Equals(other);
 
-    public static explicit operator T(Optional<T> value) => value.Value;
+    public override int GetHashCode()
+        => HashCode.Combine(IsSpecified, _value);
+
     public static implicit operator Optional<T>(T value) => new(value);
-
-    [return: NotNullIfNotNull(nameof(other))]
-    public static T operator |(Optional<T> value, T other) => value.Or(other);
-
-    public static Optional<T> operator |(Optional<T> value, Optional<T> other) => value.Or(other);
-
-    public static T? operator ~(Optional<T> value) => value.GetValueOrDefault();
-
-    public static bool operator ==(Optional<T> left, Optional<T> right)
-    {
-        return left.Equals(right);
-    }
-
-    public static bool operator !=(Optional<T> left, Optional<T> right)
-    {
-        return !(left == right);
-    }
-
-    public static bool operator true(Optional<T> value) => value.IsSpecified;
-    public static bool operator false(Optional<T> value) => !value.IsSpecified;
+    
+    public static bool operator ==(Optional<T> left, Optional<T> right) => left.Equals(right);
+    public static bool operator !=(Optional<T> left, Optional<T> right) => !left.Equals(right);
+    
+    public static bool operator true(Optional<T> opt) => opt.IsSpecified;
+    public static bool operator false(Optional<T> opt) => !opt.IsSpecified;
 }
 public static class Optional
 {

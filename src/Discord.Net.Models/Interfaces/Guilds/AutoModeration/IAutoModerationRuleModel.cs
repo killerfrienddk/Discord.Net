@@ -8,8 +8,8 @@ public partial interface IAutoModerationRuleModel : IEntityModel<ulong>
     ulong CreatorId { get; }
     int EventType { get; }
     int TriggerType { get; }
-    ITriggerMetadataModel? TriggerMetadata { get; }
-    IEnumerable<IAutoModerationActionModel> Actions { get; }
+    ITriggerMetadataModel TriggerMetadata { get; }
+    IReadOnlyCollection<IAutoModerationActionModel> Actions { get; }
     bool IsEnabled { get; }
     ulong[] ExemptRoles { get; }
     ulong[] ExemptChannels { get; }

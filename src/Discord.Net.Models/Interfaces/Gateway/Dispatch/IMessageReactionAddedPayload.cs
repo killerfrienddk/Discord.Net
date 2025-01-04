@@ -5,11 +5,11 @@ public interface IMessageReactionAddedPayload : IGatewayPayloadData
     ulong UserId { get; }
     ulong ChannelId { get; }
     ulong MessageId { get; }
-    ulong? GuildId { get; }
-    IMemberModel? Member { get; }
-    IPartialEmoteModel Emoji { get; }
-    ulong? MessageAuthorId { get; }
+    Optional<ulong> GuildId { get; }
+    Optional<IMemberModel> Member { get; }
+    DiscordEmojiId Emoji { get; }
+    Optional<ulong> MessageAuthorId { get; }
     bool IsBurst { get; }
-    string[]? BurstColors { get; }
+    Optional<string[]> BurstColors { get; }
     int Type { get; }
 }

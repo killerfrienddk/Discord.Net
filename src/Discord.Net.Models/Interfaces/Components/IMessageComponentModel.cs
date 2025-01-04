@@ -1,6 +1,7 @@
 namespace Discord.Models;
 
-public interface IMessageComponentModel
+[ModelEquality]
+public partial interface IMessageComponentModel : IModel
 {
-    uint Type { get; }
+    int Type { get; }
 }

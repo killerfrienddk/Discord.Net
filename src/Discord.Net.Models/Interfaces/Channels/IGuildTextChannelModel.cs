@@ -1,9 +1,9 @@
 namespace Discord.Models;
 
-[ModelEquality]
+[ModelEquality, HasPartialVariant]
 public partial interface IGuildTextChannelModel : IThreadableChannelModel
 {
-    int RatelimitPerUser { get; }
+    Optional<int> RatelimitPerUser { get; }
     bool IsNsfw { get; }
     string? Topic { get; }
 }

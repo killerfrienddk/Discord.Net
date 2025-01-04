@@ -4,11 +4,11 @@ namespace Discord.Models;
 public partial interface ISelectMenuComponentModel : IMessageComponentModel
 {
     string CustomId { get; }
-    IEnumerable<ISelectMenuOptionModel> Options { get; }
-    int[]? ChannelTypes { get; }
-    string? Placeholder { get; }
-    IEnumerable<ISelectMenuDefaultValueModel> DefaultValues { get; }
-    int? MinValues { get; }
-    int? MaxValues { get; }
-    bool? IsDisabled { get; }
+    Optional<IReadOnlyCollection<ISelectMenuOptionModel>> Options { get; }
+    Optional<int[]> ChannelTypes { get; }
+    Optional<string> Placeholder { get; }
+    Optional<IReadOnlyCollection<ISelectMenuDefaultValueModel>> DefaultValues { get; }
+    Optional<int> MinValues { get; }
+    Optional<int> MaxValues { get; }
+    Optional<bool> IsDisabled { get; }
 }

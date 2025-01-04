@@ -2,6 +2,6 @@ namespace Discord.Models;
 
 public interface IApplicationIntegrationTypesConfigModel
 {
-    IApplicationIntegrationTypeConfigurationModel? GuildInstall { get; }
-    IApplicationIntegrationTypeConfigurationModel? UserInstall { get; }
+    Optional<IApplicationIntegrationTypeConfigurationModel> GuildInstall { get; }
+    Optional<IApplicationIntegrationTypeConfigurationModel> UserInstall { get; }
 }

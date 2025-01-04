@@ -5,8 +5,8 @@ public interface IApplicationCommandInteractionDataModel : IInteractionDataModel
     ulong Id { get; }
     string Name { get; }
     int Type { get; }
-    IResolvedDataModel? Resolved { get; }
-    IEnumerable<IApplicationCommandInteractionOptionModel>? Options { get; }
-    ulong? GuildId { get; }
-    ulong? TargetId { get; }
+    Optional<IResolvedDataModel> Resolved { get; }
+    Optional<IReadOnlyCollection<IApplicationCommandInteractionOptionModel>> Options { get; }
+    Optional<ulong> GuildId { get; }
+    Optional<ulong> TargetId { get; }
 }

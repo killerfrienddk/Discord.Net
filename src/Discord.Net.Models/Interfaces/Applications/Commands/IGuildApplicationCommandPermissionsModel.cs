@@ -5,5 +5,5 @@ public partial interface IGuildApplicationCommandPermissionsModel : IEntityModel
 {
     ulong ApplicationId { get; }
     ulong GuildId { get; }
-    IEnumerable<IApplicationCommandPermission> Permissions { get; }
+    IReadOnlyCollection<IApplicationCommandPermission> Permissions { get; }
 }

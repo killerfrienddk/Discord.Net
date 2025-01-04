@@ -15,6 +15,6 @@ public interface IApplicationCommandOptionChoiceModel<
 public partial interface IApplicationCommandOptionChoiceModel : IModel
 {
     string Name { get; }
-    IReadOnlyDictionary<string, string>? NameLocalization { get; }
+    Optional<IReadOnlyDictionary<string, string>> NameLocalization { get; }
     object Value { get; }
 }

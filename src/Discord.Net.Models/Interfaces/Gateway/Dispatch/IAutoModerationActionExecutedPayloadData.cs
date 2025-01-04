@@ -7,9 +7,9 @@ public interface IAutoModerationActionExecutedPayloadData : IGatewayPayloadData
     ulong RuleId { get; }
     int RuleTriggerType { get; }
     ulong UserId { get; }
-    ulong? ChannelId { get; }
-    ulong? MessageId { get; }
-    ulong? AlertSystemMessageId { get; }
+    Optional<ulong> ChannelId { get; }
+    Optional<ulong> MessageId { get; }
+    Optional<ulong> AlertSystemMessageId { get; }
     string Content { get; }
     string? MatchedKeyword { get; }
     string? MatchedContent { get; }

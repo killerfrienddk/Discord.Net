@@ -5,5 +5,5 @@ public partial interface IPollResultModel : IModel
 {
     bool IsFinalized { get; }
     
-    IEnumerable<IPollAnswerCountModel> AnswerCounts { get; }
+    IReadOnlyCollection<IPollAnswerCountModel> AnswerCounts { get; }
 }

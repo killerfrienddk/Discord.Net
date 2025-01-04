@@ -4,9 +4,9 @@ namespace Discord.Models;
 public partial interface IPollModel : IModel
 {
     IPollMediaModel Question { get; }
-    IEnumerable<IPollAnswerModel> Answers { get; }
+    IReadOnlyCollection<IPollAnswerModel> Answers { get; }
     DateTimeOffset? Expiry { get; }
     bool AllowMultiselect { get; }
     int LayoutType { get; }
-    IPollResultModel? Results { get; }
+    Optional<IPollResultModel> Results { get; }
 }

@@ -6,27 +6,30 @@ public partial interface IApplicationModel : IEntityModel<ulong>
     string Name { get; }
     string? Icon { get; }
     string Description { get; }
-    ulong? BotId { get; }
-    string[]? RPCOrigins { get; }
+    Optional<string[]> RPCOrigins { get; }
     bool IsPublicBot { get; }
     bool BotRequiresCodeGrant { get; }
-    string? TermsOfServiceUrl { get; }
-    string? PrivacyPolicyUrl { get; }
-    ulong? OwnerId { get; }
+    Optional<ModelOrId<IPartialUserModel, ulong>> Bot { get; }
+    Optional<string> TermsOfServiceUrl { get; }
+    Optional<string> PrivacyPolicyUrl { get; }
+    Optional<ModelOrId<IPartialUserModel, ulong>> Owner { get; }
     string VerifyKey { get; }
-    ulong? TeamId { get; }
-    ulong? GuildId { get; }
-    ulong? PrimarySkuId { get; }
-    string? Slug { get; }
-    string? CoverImage { get; }
-    int? Flags { get; }
-    int? ApproximateGuildCount { get; }
-    int? ApproximateUserInstallCount { get; }
-    string[]? RedirectUris { get; }
-    string? InteractionsEndpointUrl { get; }
-    string? RoleConnectionsVerificationUrl { get; }
-    string[]? Tags { get; }
-    IApplicationInstallParamsModel? InstallParams { get; }
-    IApplicationIntegrationTypesConfigModel? IntegrationTypesConfig { get; }
-    string? CustomInstallUrl { get; }
+    ModelOrId<ITeamModel, ulong>? Team { get; }
+    Optional<ModelOrId<IPartialGuildModel, ulong>> Guild { get; }
+    Optional<ulong> PrimarySkuId { get; }
+    Optional<string> Slug { get; }
+    Optional<string> CoverImage { get; }
+    Optional<int> Flags { get; }
+    Optional<int> ApproximateGuildCount { get; }
+    Optional<int> ApproximateUserInstallCount { get; }
+    Optional<string[]> RedirectUris { get; }
+    Optional<string?> InteractionsEndpointUrl { get; }
+    Optional<string?> RoleConnectionsVerificationUrl { get; }
+    Optional<string?> EventWebhookUrl { get; }
+    Optional<int> EventWebhookStatus { get; }
+    Optional<string[]> EventWebhookTypes { get; }
+    Optional<string[]> Tags { get; }
+    Optional<IApplicationInstallParamsModel> InstallParams { get; }
+    Optional<IApplicationIntegrationTypesConfigModel> IntegrationTypesConfig { get; }
+    Optional<string> CustomInstallUrl { get; }
 }

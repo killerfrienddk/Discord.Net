@@ -4,6 +4,6 @@ public interface IMessageComponentDataModel : IInteractionDataModel
 {
     string CustomId { get; }
     int ComponentType { get; }
-    string[]? Values { get; }
-    IResolvedDataModel? Resolved { get; }
+    Optional<string[]> Values { get; }
+    Optional<IResolvedDataModel> Resolved { get; }
 }

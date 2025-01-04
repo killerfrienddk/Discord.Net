@@ -3,9 +3,9 @@ namespace Discord.Models;
 [ModelEquality]
 public partial interface IStringApplicationCommandOptionModel : IApplicationCommandOptionModel
 {
-    bool? IsRequired { get; }
-    IReadOnlyCollection<IApplicationCommandOptionChoiceModel<string>>? Choices { get; }
-    int? MinLength { get; }
-    int? MaxLength { get; }
-    bool? Autocomplete { get; }
+    Optional<bool> IsRequired { get; }
+    Optional<IReadOnlyCollection<IApplicationCommandOptionChoiceModel<string>>> Choices { get; }
+    Optional<int> MinLength { get; }
+    Optional<int> MaxLength { get; }
+    Optional<bool> Autocomplete { get; }
 }

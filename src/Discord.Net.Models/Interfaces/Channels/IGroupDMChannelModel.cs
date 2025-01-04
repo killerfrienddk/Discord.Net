@@ -1,7 +1,8 @@
 namespace Discord.Models;
 
-[ModelEquality]
+[ModelEquality, HasPartialVariant]
 public partial interface IGroupDMChannelModel : IChannelModel
 {
-    IEnumerable<ulong> Recipients { get; }
+    IReadOnlyCollection<ModelOrId<IUserModel, ulong>> Recipients { get; }
+    ulong OwnerId { get; }
 }

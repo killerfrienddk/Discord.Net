@@ -2,5 +2,5 @@ namespace Discord.Models;
 
 public interface IApplicationIntegrationTypeConfigurationModel
 {
-    IApplicationInstallParamsModel? OAuth2InstallParams { get; }
+    Optional<IApplicationInstallParamsModel> OAuth2InstallParams { get; }
 }

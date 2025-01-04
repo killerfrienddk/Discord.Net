@@ -3,9 +3,9 @@ namespace Discord.Models;
 public interface IRequestGuildMembersPayloadData : IGatewayPayloadData
 {
     ulong GuildId { get; }
-    string? Query { get; }
-    int? Limit { get; }
-    bool? IncludePresences { get; }
-    ulong[]? UserIds { get; }
-    string? Nonce { get; }
+    Optional<string> Query { get; }
+    int Limit { get; }
+    Optional<bool> IncludePresences { get; }
+    Optional<IReadOnlyCollection<ulong>> UserIds { get; }
+    Optional<string> Nonce { get; }
 }

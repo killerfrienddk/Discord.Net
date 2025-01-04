@@ -17,8 +17,12 @@ public class KnownTypes
         Compilation = compilation;
     }
 
+    
     public HashSet<ITypeSymbol>? BuiltInSupportTypes { get; set; }
 
+    public INamedTypeSymbol? Optional => GetOrResolveType("Discord.Optional`1", ref _optional);
+    private Optional<INamedTypeSymbol?> _optional;
+    
     public INamedTypeSymbol? IListOfTType => GetOrResolveType(typeof(IList<>), ref _IListOfTType);
     private Optional<INamedTypeSymbol?> _IListOfTType;
 

@@ -477,7 +477,7 @@ public sealed class GatewayLoadable : ISyntaxGenerationCombineTask<GatewayLoadab
         GenerationTarget target,
         List<GenerationTarget> targets,
         out GenerationTarget[] children,
-        out List<ITypeSymbol> bases,
+        out List<INamedTypeSymbol> bases,
         out GenerationTarget[] parents)
     {
         children = targets

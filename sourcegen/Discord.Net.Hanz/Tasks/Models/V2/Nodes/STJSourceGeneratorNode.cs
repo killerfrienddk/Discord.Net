@@ -26,43 +26,43 @@ public class STJSourceGeneratorNode : Node
     public STJSourceGeneratorNode(IncrementalGeneratorInitializationContext context, ILogger logger)
         : base(context, logger)
     {
-        _generator = new();
-        _driver = CSharpGeneratorDriver.Create(_generator);
-
-        var modelsProvider = GetNode<JsonModelNode>()
-            .ModelsProvider
-            .Collect();
-
-        var contextTypeProvider = modelsProvider.Select(CreateContextType);
-        var stjCompilationProvider = context.CompilationProvider
-            .Combine(modelsProvider)
-            .Select(CreateDriverCompilation);
-
-        var stjGeneratorResultProvider = stjCompilationProvider
-            .Combine(contextTypeProvider)
-            .Select((tuple, _) =>
-            {
-                var (compilation, contextType) = tuple;
-
-                return compilation.AddSyntaxTrees(
-                    CSharpSyntaxTree.ParseText(
-                        contextType,
-                        encoding: Encoding.UTF8,
-                        options: (CSharpParseOptions) compilation.SyntaxTrees.First().Options
-                    )!
-                );
-            })
-            .Select(RunSTJGenerator);
-
-        context.RegisterSourceOutput(
-            stjGeneratorResultProvider,
-            ProcessGenerationResult
-        );
-
-        context.RegisterSourceOutput(
-            contextTypeProvider,
-            (ctx, contextType) => ctx.AddSource("Json/Context.g.cs", contextType)
-        );
+        // _generator = new();
+        // _driver = CSharpGeneratorDriver.Create(_generator);
+        //
+        // var modelsProvider = GetNode<JsonModelNode>()
+        //     .ModelsProvider
+        //     .Collect();
+        //
+        // var contextTypeProvider = modelsProvider.Select(CreateContextType);
+        // var stjCompilationProvider = context.CompilationProvider
+        //     .Combine(modelsProvider)
+        //     .Select(CreateDriverCompilation);
+        //
+        // var stjGeneratorResultProvider = stjCompilationProvider
+        //     .Combine(contextTypeProvider)
+        //     .Select((tuple, _) =>
+        //     {
+        //         var (compilation, contextType) = tuple;
+        //
+        //         return compilation.AddSyntaxTrees(
+        //             CSharpSyntaxTree.ParseText(
+        //                 contextType,
+        //                 encoding: Encoding.UTF8,
+        //                 options: (CSharpParseOptions) compilation.SyntaxTrees.First().Options
+        //             )!
+        //         );
+        //     })
+        //     .Select(RunSTJGenerator);
+        //
+        // context.RegisterSourceOutput(
+        //     stjGeneratorResultProvider,
+        //     ProcessGenerationResult
+        // );
+        //
+        // context.RegisterSourceOutput(
+        //     contextTypeProvider,
+        //     (ctx, contextType) => ctx.AddSource("Json/Context.g.cs", contextType)
+        // );
     }
 
     private string CreateContextType(

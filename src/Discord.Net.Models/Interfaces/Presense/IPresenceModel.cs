@@ -3,11 +3,11 @@ namespace Discord.Models;
 [ModelEquality]
 public partial interface IPresenceModel : IEntityModel<ulong>
 {
-    ulong UserId { get; }
-    ulong? GuildId { get; }
-    string? Status { get; }
-    IEnumerable<IActivityModel>? Activities { get; }
-    IClientStatusModel? ClientStatus { get; }
+    ModelOrId<IPartialUserModel, ulong> User { get; }
+    ulong GuildId { get; }
+    string Status { get; }
+    IReadOnlyCollection<IActivityModel> Activities { get; }
+    IClientStatusModel ClientStatus { get; }
 
-    ulong IEntityModel<ulong>.Id => UserId;
+    ulong IEntityModel<ulong>.Id => User.Id;
 }

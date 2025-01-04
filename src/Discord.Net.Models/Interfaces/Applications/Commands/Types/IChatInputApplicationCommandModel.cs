@@ -3,5 +3,5 @@ namespace Discord.Models;
 [ModelEquality]
 public partial interface IChatInputApplicationCommandModel : IApplicationCommandModel
 {
-    IReadOnlyCollection<IApplicationCommandOptionModel>? Options { get; }
+    IReadOnlyCollection<IApplicationCommandOptionModel> Options { get; }
 }

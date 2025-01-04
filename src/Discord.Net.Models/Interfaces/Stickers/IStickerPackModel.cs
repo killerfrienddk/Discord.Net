@@ -1,11 +1,13 @@
 namespace Discord.Models;
 
-public interface IStickerPackModel : IEntityModel<ulong>
+[ModelEquality]
+public partial interface IStickerPackModel : IEntityModel<ulong>
 {
-    IEnumerable<ulong> StickerIds { get; }
     string Name { get; }
     ulong SkuId { get; }
-    ulong? CoverStickerId { get; }
+    Optional<ulong> CoverStickerId { get; }
     string Description { get; }
-    ulong? BannerAssetId { get; }
+    Optional<ulong> BannerAssetId { get; }
+    
+    IReadOnlyCollection<ModelOrId<IStickerModel, ulong>> Stickers { get; }
 }

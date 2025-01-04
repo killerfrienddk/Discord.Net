@@ -1,7 +1,7 @@
 namespace Discord.Models;
 
-[ModelEquality]
+[ModelEquality, HasPartialVariant]
 public partial interface IDMChannelModel : IChannelModel
 {
-    ulong RecipientId { get; }
+    ModelOrId<IUserModel, ulong> Recipient { get; }
 }

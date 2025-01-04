@@ -1,21 +1,23 @@
 namespace Discord.Models;
 
 [ModelEquality, HasPartialVariant]
-public partial interface IVoiceStateModel : IEntityModel<ulong>
+public partial interface IVoiceStateModel : IModel
 {
-    [PartialIgnore]
-    ulong UserId { get; }
-    string SessionId { get; }
+    Optional<ulong> GuildId { get; }
     ulong? ChannelId { get; }
-    ulong? GuildId { get; }
-    bool Deaf { get; }
-    bool Mute { get; }
-    bool SelfDeaf { get; }
-    bool SelfMute { get; }
-    bool? SelfStream { get; }
-    bool SelfVideo { get; }
-    bool Suppress { get; }
+    ulong UserId { get; }
+    Optional<ModelOrId<IMemberModel, ulong>> Member { get; }
+    string SessionId { get; }
+    
+    bool IsDeafened { get; }
+    bool IsMuted { get; }
+    
+    bool IsSelfDeafened { get; }
+    bool IsSelfMuted { get; }
+    Optional<bool> IsSelfStreaming { get; }
+    bool IsSelfVideo { get; }
+    
+    bool IsSuppressed { get; }
+    
     DateTimeOffset? RequestToSpeakTimestamp { get; }
-
-    ulong IEntityModel<ulong>.Id => UserId;
 }

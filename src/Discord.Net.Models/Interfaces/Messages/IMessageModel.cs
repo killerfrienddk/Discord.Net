@@ -2,86 +2,62 @@ using Discord.Models.Json;
 
 namespace Discord.Models;
 
-[ModelEquality]
+[ModelEquality, HasPartialVariant]
 public partial interface IMessageModel : IEntityModel<ulong>
 {
-    ulong AuthorId { get; }
     ulong ChannelId { get; }
-    ulong? WebhookId { get; }
-    string? Content { get; }
+    ModelOrId<IUserModel, ulong> Author { get; }
+    string Content { get; }
+    
     DateTimeOffset Timestamp { get; }
     DateTimeOffset? EditedTimestamp { get; }
+    
     bool IsTTS { get; }
     bool MentionsEveryone { get; }
-    ulong[] MentionedUsers { get; }
-    ulong[] MentionedRoles { get; }
-    IEnumerable<IMentionedChannelModel> MentionedChannels { get; }
-    IEnumerable<IAttachmentModel> Attachments { get; }
-    IEnumerable<IEmbedModel> Embeds { get; }
-    IEnumerable<DiscordEmojiId> Reactions { get; }
-    bool IsPinned { get; }
-    bool IsWebhook { get; }
-    int Type { get; }
-
-    IMessageActivityModel? Activity { get; }
-    IMessageApplicationModel? Application { get; }
-
-    IMessageReferenceModel? MessageReference { get; }
-
-    int Flags { get; }
-
-    IMessageInteractionMetadataModel? InteractionMetadata { get; }
-
-    ulong? ThreadId { get; }
-    ulong? ThreadGuildId { get; } // used for constructing thread loadables, always present with 'thread' in the API
-
-    IEnumerable<MessageComponent> Components { get; }
-    IEnumerable<IStickerItemModel> Stickers { get; }
-
-    int? Position { get; }
-
-    IMessageRoleSubscriptionData? RoleSubscriptionData { get; }
     
-    IPollModel? Poll { get; }
-}
-
-public interface IMessageRoleSubscriptionData
-{
-    ulong RoleSubscriptionListingId { get; }
-    string TierName { get; }
-    int TotalMonthsSubscribed { get; }
-    bool IsRenewal { get; }
-}
-
-[ModelEquality]
-public partial interface IMessageInteractionMetadataModel : IEntityModel<ulong>
-{
+    IReadOnlyCollection<ModelOrId<IUserModel, ulong>> Mentions { get; }
+    IReadOnlyCollection<ulong> MentionedRoles { get; }
+    IReadOnlyCollection<IMentionedChannelModel> MentionedChannels { get; }
+    
+    IReadOnlyCollection<IAttachmentModel> Attachments { get; }
+    IReadOnlyCollection<IEmbedModel> Embeds { get; }
+    IReadOnlyCollection<IReactionModel> Reactions { get; }
+    
+    Optional<string> Nonce { get; }
+    
+    bool IsPinned { get; }
+    
+    Optional<ulong> WebhookId { get; }
+    
     int Type { get; }
-    ulong UserId { get; }
-    IDictionary<int, ulong> AuthorizingIntegrationOwners { get; }
-    ulong? OriginalResponseMessageId { get; }
-    ulong? InteractedMessageId { get; }
-    IMessageInteractionMetadataModel? TriggeringInteractionMetadata { get; }
-}
-
-public interface IMessageReferenceModel
-{
-    ulong? MessageId { get; }
-    ulong? ChannelId { get; }
-    ulong GuildId { get; }
-}
-
-public interface IMessageApplicationModel
-{
-    ulong Id { get; }
-    string CoverImage { get; }
-    string Description { get; }
-    string Icon { get; }
-    string Name { get; }
-}
-
-public interface IMessageActivityModel
-{
-    int Type { get; }
-    string? PartyId { get; }
+    
+    Optional<IMessageActivityModel> Activity { get; }
+    Optional<IPartialApplicationModel> Application { get; }
+    
+    Optional<ulong> ApplicationId { get; }
+    
+    Optional<int> Flags { get; }
+    
+    Optional<IMessageReferenceModel> MessageReference { get; }
+    Optional<IReadOnlyCollection<IMessageSnapshotModel>> MessageSnapshots { get; }
+    Optional<ModelOrId<IMessageModel, ulong>?> ReferencedMessage { get; }
+    
+    Optional<IMessageInteractionMetadataModel> InteractionMetadata { get; }
+    
+    Optional<ModelOrId<IThreadChannelModel, ulong>> Thread { get; }
+    
+    Optional<IReadOnlyCollection<IMessageComponentModel>> Components { get; }
+    
+    Optional<IReadOnlyCollection<IStickerItemModel>> StickerItems { get; }
+    
+    Optional<int> Position { get; }
+    
+    Optional<IMessageRoleSubscriptionData> RoleSubscriptionData { get; }
+    
+    Optional<IResolvedDataModel> Resolved { get; }
+    
+    Optional<IPollModel> Poll { get; }
+    
+    Optional<IMessageCallModel> Call { get; }
+    
 }

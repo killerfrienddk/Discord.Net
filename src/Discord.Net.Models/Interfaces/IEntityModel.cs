@@ -5,8 +5,3 @@ public interface IEntityModel<out TId> : IModel
 {
     TId Id { get; }
 }
-
-public interface IModel : IEquatable<IModel>
-{
-    bool IEquatable<IModel>.Equals(IModel? other) => Equals(this, other);
-}

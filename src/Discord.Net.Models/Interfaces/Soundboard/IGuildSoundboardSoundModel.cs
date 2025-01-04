@@ -4,5 +4,5 @@ namespace Discord.Models;
 public partial interface IGuildSoundboardSoundModel : ISoundboardSoundModel
 {
     ulong GuildId { get; }
-    ulong? UserId { get; }
+    Optional<ModelOrId<IUserModel, ulong>> User { get; }
 }
