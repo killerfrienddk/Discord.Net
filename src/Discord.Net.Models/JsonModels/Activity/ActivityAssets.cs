@@ -2,7 +2,8 @@ using System.Text.Json.Serialization;
 
 namespace Discord.Models.Json;
 
-public sealed class ActivityAssets
+[JsonModel]
+public sealed partial class ActivityAssets : IActivityAssetsModel
 {
     [JsonPropertyName("small_text")]
     public Optional<string> SmallText { get; set; }

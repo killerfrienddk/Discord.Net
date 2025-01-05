@@ -108,6 +108,14 @@ public record TypeSpec(
         Properties = Properties.AddRange(properties)
     };
 
+    public TypeSpec AddFields(
+        params FieldSpec[] fields
+    ) => this with {Fields = Fields.AddRange(fields)};
+    
+    public TypeSpec AddFields(
+        IEnumerable<FieldSpec> fields
+    ) => this with {Fields = Fields.AddRange(fields)};
+
     public TypeSpec AddNestedType(
         TypeSpec type
     ) => this with
@@ -182,7 +190,8 @@ public record TypeSpec(
             Kind: typeref.TypeKind,
             Generics: typeref.Generics.ToImmutableEquatableArray(),
             GenericConstraints: new(typeref.GenericConstraints),
-            Accessibility: typeref.Accessibility
+            Accessibility: typeref.Accessibility,
+            Record: typeref.IsRecord
         );
     }
 

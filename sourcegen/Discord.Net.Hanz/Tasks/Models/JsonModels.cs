@@ -8,8 +8,6 @@ using System.Text;
 
 namespace Discord.Net.Hanz.Tasks;
 
-
-
 public static class JsonModels
 {
     public sealed class JsonModelTarget(

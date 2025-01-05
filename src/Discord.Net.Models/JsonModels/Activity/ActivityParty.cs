@@ -2,11 +2,12 @@ using System.Text.Json.Serialization;
 
 namespace Discord.Models.Json;
 
-public sealed class ActivityParty
+[JsonModel]
+public sealed partial class ActivityParty : IActivityPartyModel
 {
     [JsonPropertyName("id")]
     public Optional<string> Id { get; set; }
 
     [JsonPropertyName("size")]
-    public Optional<long[]> Size { get; set; }
+    public Optional<IReadOnlyCollection<int>> Size { get; set; }
 }

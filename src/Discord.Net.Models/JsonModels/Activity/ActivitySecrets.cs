@@ -2,7 +2,8 @@ using System.Text.Json.Serialization;
 
 namespace Discord.Models.Json;
 
-public sealed class ActivitySecrets
+[JsonModel]
+public sealed partial class ActivitySecrets : IActivitySecretsModel
 {
     [JsonPropertyName("match")]
     public Optional<string> Match { get; set; }

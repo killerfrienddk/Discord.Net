@@ -14,11 +14,11 @@ public partial interface IActivityModel : IModel
     Optional<ulong> ApplicationId { get; }
     Optional<string?> Details { get; }
     Optional<string?> State { get; }
-    Optional<IActivityEmojiModel?> Emoji { get; }
+    Optional<DiscordEmojiId?> Emoji { get; }
     Optional<IActivityPartyModel> Party { get; }
     Optional<IActivityAssetsModel> Assets { get; }
     Optional<IActivitySecretsModel> Secrets { get; }
     Optional<bool> IsInstance { get; }
     Optional<int> Flags { get; }
-    IReadOnlyCollection<IActivityButtonModel> Buttons { get; }
+    Optional<IReadOnlyCollection<IActivityButtonModel>> Buttons { get; }
 }

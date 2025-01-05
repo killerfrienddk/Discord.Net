@@ -4,5 +4,5 @@
 public partial interface IActivityPartyModel : IModel
 {
     Optional<string> Id { get; }
-    Optional<int[]> Size { get; }
+    Optional<IReadOnlyCollection<int>> Size { get; }
 }

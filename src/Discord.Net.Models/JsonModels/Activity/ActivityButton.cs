@@ -2,7 +2,8 @@ using System.Text.Json.Serialization;
 
 namespace Discord.Models.Json;
 
-public sealed class ActivityButton
+[JsonModel]
+public sealed partial class ActivityButton : IActivityButtonModel
 {
     [JsonPropertyName("label")]
     public required string Label { get; set; }

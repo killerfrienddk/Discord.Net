@@ -3,7 +3,8 @@ using System.Text.Json.Serialization;
 
 namespace Discord.Models.Json;
 
-public sealed class ActivityTimestamps
+[JsonModel]
+public sealed partial class ActivityTimestamps : IActivityTimestampsModel
 {
     [JsonPropertyName("start")]
     //[JsonConverter(typeof(MillisecondEpocConverter))]

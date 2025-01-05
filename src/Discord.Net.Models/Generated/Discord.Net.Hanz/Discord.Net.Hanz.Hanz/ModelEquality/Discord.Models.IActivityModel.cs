@@ -21,13 +21,13 @@ public partial interface IActivityModel :
             (this.ApplicationId.IsSpecified == other.ApplicationId.IsSpecified) && (!this.ApplicationId.IsSpecified || (EqualityComparer<ulong>.Default.Equals(this.ApplicationId.Value, other.ApplicationId.Value))) &&
             (this.Details.IsSpecified == other.Details.IsSpecified) && (!this.Details.IsSpecified || (EqualityComparer<string?>.Default.Equals(this.Details.Value, other.Details.Value))) &&
             (this.State.IsSpecified == other.State.IsSpecified) && (!this.State.IsSpecified || (EqualityComparer<string?>.Default.Equals(this.State.Value, other.State.Value))) &&
-            (this.Emoji.IsSpecified == other.Emoji.IsSpecified) && (!this.Emoji.IsSpecified || (EqualityComparer<Discord.Models.IActivityEmojiModel?>.Default.Equals(this.Emoji.Value, other.Emoji.Value))) &&
+            (this.Emoji.IsSpecified == other.Emoji.IsSpecified) && (!this.Emoji.IsSpecified || (EqualityComparer<Discord.DiscordEmojiId?>.Default.Equals(this.Emoji.Value, other.Emoji.Value))) &&
             (this.Party.IsSpecified == other.Party.IsSpecified) && (!this.Party.IsSpecified || (EqualityComparer<Discord.Models.IActivityPartyModel>.Default.Equals(this.Party.Value, other.Party.Value))) &&
             (this.Assets.IsSpecified == other.Assets.IsSpecified) && (!this.Assets.IsSpecified || (EqualityComparer<Discord.Models.IActivityAssetsModel>.Default.Equals(this.Assets.Value, other.Assets.Value))) &&
             (this.Secrets.IsSpecified == other.Secrets.IsSpecified) && (!this.Secrets.IsSpecified || (EqualityComparer<Discord.Models.IActivitySecretsModel>.Default.Equals(this.Secrets.Value, other.Secrets.Value))) &&
             (this.IsInstance.IsSpecified == other.IsInstance.IsSpecified) && (!this.IsInstance.IsSpecified || (EqualityComparer<bool>.Default.Equals(this.IsInstance.Value, other.IsInstance.Value))) &&
             (this.Flags.IsSpecified == other.Flags.IsSpecified) && (!this.Flags.IsSpecified || (EqualityComparer<int>.Default.Equals(this.Flags.Value, other.Flags.Value))) &&
-            EqualityComparer<System.Collections.Generic.IReadOnlyCollection<Discord.Models.IActivityButtonModel>>.Default.Equals(this.Buttons, other.Buttons);
+            (this.Buttons.IsSpecified == other.Buttons.IsSpecified) && (!this.Buttons.IsSpecified || (EqualityComparer<System.Collections.Generic.IReadOnlyCollection<Discord.Models.IActivityButtonModel>>.Default.Equals(this.Buttons.Value, other.Buttons.Value)));
     }
     
 

@@ -29,6 +29,8 @@ public sealed class TypeRef(ITypeSymbol type) : IEquatable<TypeRef>
     public TypeKind TypeKind { get; } = type.TypeKind;
     public SpecialType SpecialType { get; } = type.OriginalDefinition.SpecialType;
 
+    public bool IsRecord { get; } = type.IsRecord;
+
     public bool CanBeNull => !IsValueType || SpecialType is SpecialType.System_Nullable_T;
 
     public ImmutableArray<GenericSpec> Generics { get; }
